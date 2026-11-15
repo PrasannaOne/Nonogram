@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4f5f1"><meta name="description" content="A calm little logic-puzzle corner by PrasannaOne.">
+  <title>PrasannaOne · Little Logic</title>
+  <link rel="stylesheet" href="web-port/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand-mark" href="#home" aria-label="PrasannaOne home"><span class="brand-dot"></span><span>prasanna<span class="brand-one">one</span></span></a>
+      <div class="top-actions"><button id="helpBtn" class="icon-button" aria-label="How to play">?</button><button id="settingsBtn" class="icon-button" aria-label="Settings">⚙</button></div>
+    </header>
+
+    <section id="homeView" class="home-view">
+      <div class="eyebrow">A LITTLE SPACE TO THINK</div>
+      <h1>Find the<br><em>quiet pattern.</em></h1>
+      <p class="intro">A small puzzle. A clear mind. Take it at your own pace.</p>
+      <div class="continue-card">
+        <div><div class="eyebrow">YOUR JOURNEY</div><div class="continue-title" id="homeLevel">Level 1</div><div class="muted" id="homeProgress">A fresh page awaits.</div></div>
+        <button id="playBtn" class="primary-button">Continue <span>↗</span></button>
+      </div>
+      <div class="home-foot"><span>NO RUSH, JUST LOGIC</span><span id="completedCount">0 puzzles completed</span></div>
+    </section>
+
+    <section id="gameView" class="game-view" hidden>
+      <div class="game-heading"><button id="backBtn" class="back-button" aria-label="Back to home">←</button><div><div class="eyebrow">LITTLE LOGIC</div><h2 id="levelTitle">Puzzle 01</h2></div><div class="heading-actions"><button id="hintBtn" class="hint-button" aria-label="Reveal one correct square">Hint ✦</button><div class="level-size" id="levelSize">5 × 5</div></div></div>
+      <div class="puzzle-card">
+        <div class="puzzle-meta"><span>READ THE CLUES</span><span id="progressLabel">0% complete</span></div>
+        <div class="board-wrap" id="boardWrap">
+          <div class="corner-space"></div><div class="column-clues" id="columnClues"></div><div class="row-clues" id="rowClues"></div><div class="puzzle-grid" id="puzzleGrid" role="grid" aria-label="Nonogram puzzle"></div>
+        </div>
+        <div class="tool-row">
+          <button id="undoBtn" class="tool-button" disabled><span class="tool-icon">↶</span><span>Undo</span></button>
+          <div class="tool-switch" role="group" aria-label="Cell marking tool"><button class="tool-choice selected" data-tool="fill" aria-pressed="true"><span class="fill-swatch"></span>Fill</button><button class="tool-choice" data-tool="cross" aria-pressed="false"><span class="cross-swatch">×</span>Cross</button></div>
+          <button id="eraseBtn" class="tool-button"><span class="tool-icon">⌫</span><span>Erase</span></button>
+        </div>
+      </div>
+      <div class="game-bottom"><span id="statusText">Complete the pattern, one square at a time.</span><button id="resetBtn" class="text-button">Reset board</button></div>
+    </section>
+
+    <footer class="footer-note">MADE FOR SLOW MOMENTS <span>·</span> PRASANNAONE</footer>
+  </main>
+  <dialog id="messageDialog" class="dialog"><div class="dialog-inner"><button class="dialog-close" data-close aria-label="Close">×</button><div class="eyebrow" id="dialogEyebrow">A LITTLE NOTE</div><h3 id="dialogTitle">How to play</h3><p id="dialogBody"></p><div id="dialogActions" class="dialog-actions"></div></div></dialog>
+  <script type="module" src="web-port/app.js"></script>
+</body></html>
