@@ -1,0 +1,57 @@
+name: Import Nonogram ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Nonogram.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nonogram-zip-import
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Extract website and delete uploaded ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s Nonogram.zip
+          python - <<'PY'
+          import zipfile
+          from pathlib import PurePosixPath
+          with zipfile.ZipFile("Nonogram.zip") as archive:
+              for item in archive.infolist():
+                  path = PurePosixPath(item.filename)
+                  if path.is_absolute() or ".." in path.parts:
+                      raise SystemExit(f"Unsafe ZIP path: {item.filename}")
+              archive.extractall(".")
+              print(f"Extracted {len(archive.infolist())} entries")
+          PY
+          rm -f Nonogram.zip
+          touch .nojekyll
+
+      - name: Commit extracted website files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No extracted changes to commit."
+            exit 0
+          fi
+          git commit -m "Deploy uploaded Nonogram package"
+          git push origin HEAD:main
+          
