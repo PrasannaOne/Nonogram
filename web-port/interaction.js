@@ -35,7 +35,7 @@ export class PuzzleBoard {
   beginStroke(tool) {
     if (!VALID_TOOLS.has(tool)) throw new TypeError(`Unknown tool: ${tool}`);
     if (this.activeStroke) this.endStroke();
-    this.activeStroke = { tool, visited: new Set(), changed: false };
+    this.activeStroke = { tool, targetState: null, visited: new Set(), changed: false };
   }
 
   paintCell(row, col) {
@@ -49,15 +49,19 @@ export class PuzzleBoard {
     this.activeStroke.visited.add(key);
 
     const previous = this.cells[row][col];
-    let next;
-    if (this.activeStroke.tool === TOOL.FILL) {
-      next = previous === CELL.FILLED ? CELL.UNKNOWN : CELL.FILLED;
-    } else if (this.activeStroke.tool === TOOL.CROSS) {
-      next = previous === CELL.CROSSED ? CELL.UNKNOWN : CELL.CROSSED;
-    } else {
-      next = CELL.UNKNOWN;
+    // Lock the gesture's intent from its starting tile. Every tile crossed by
+    // this pointer gesture receives the same target state, so mixed rows never
+    // get toggled/inverted one cell at a time while dragging.
+    if (this.activeStroke.targetState === null) {
+      if (this.activeStroke.tool === TOOL.FILL) {
+        this.activeStroke.targetState = previous === CELL.FILLED ? CELL.UNKNOWN : CELL.FILLED;
+      } else if (this.activeStroke.tool === TOOL.CROSS) {
+        this.activeStroke.targetState = previous === CELL.CROSSED ? CELL.UNKNOWN : CELL.CROSSED;
+      } else {
+        this.activeStroke.targetState = CELL.UNKNOWN;
+      }
     }
-
+    const next = this.activeStroke.targetState;
     if (previous === next) return false;
     this.cells[row][col] = next;
     this.#pushHistory({ row, col, state: previous });

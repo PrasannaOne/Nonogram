@@ -61,6 +61,7 @@ function save() {
   persist();
 }
 function make(tag, cls, text) { const node = document.createElement(tag); if (cls) node.className = cls; if (text !== undefined) node.textContent = text; return node; }
+function announceStatus(message) { const region = $('liveStatus'); if (region) region.textContent = message; }
 function readThemePreference() {
   try { const saved = storage.getItem(THEME_KEY); return Object.hasOwn(THEMES, saved) ? saved : 'lavender'; }
   catch { return 'lavender'; }
@@ -89,7 +90,6 @@ function closeDialog(dialog) {
 }
 function render() {
   $('levelNumber').textContent = puzzle.level;
-  $('modeLabel').textContent = activeMode.charAt(0).toUpperCase() + activeMode.slice(1);
   $('levelSize').textContent = `${puzzle.width} × ${puzzle.height}`;
   $('pointsBalance').textContent = progress.points;
   document.querySelectorAll('[data-difficulty]').forEach(btn => {
@@ -149,7 +149,6 @@ function render() {
   updateBoardMetrics();
   $('undoButton').disabled = !board.canUndo();
   $('hintButton').disabled = !hasHintCandidate();
-  $('feedback').textContent = (completed ? `Level ${puzzle.level} cleared · Next puzzle loading…` : `Level ${puzzle.level} · ${doneLines.rows.length}/${puzzle.height} rows · ${doneLines.columns.length}/${puzzle.width} columns`) + ` · ${progress.points} points` + (storageWarning ? ' · Save unavailable' : '');
   document.querySelectorAll('[data-tool]').forEach(btn => {
     const selected=btn.dataset.tool===activeTool; btn.classList.toggle('active',selected); btn.setAttribute('aria-pressed',String(selected));
   });
@@ -200,7 +199,6 @@ function refreshLineMarks() {
     const clue = puzzle.clues.columns[i];
     node.setAttribute('aria-label', `Column ${i + 1} clue: ${clue[0] === 0 ? 'no filled cells' : clue.join(', ')}${isDone ? ', complete' : ''}`);
   });
-  $('feedback').textContent = `${done.rows.length} / ${puzzle.height} rows · ${done.columns.length} / ${puzzle.width} columns · ${progress.points} points` + (storageWarning ? ' · Progress could not be saved' : '');
   $('undoButton').disabled = !board.canUndo();
   $('hintButton').disabled = !hasHintCandidate();
 }
@@ -214,6 +212,7 @@ function onCellDown(event) {
   if (completed || event.button !== 0 || event.isPrimary === false) return;
   event.preventDefault();
   if (pointerDown) finishStroke();
+  if (completed) return;
   pointerDown = true;
   activePointerId = event.pointerId ?? null;
   board.beginStroke(activeTool);
@@ -236,8 +235,11 @@ function finishStroke(event) {
   pointerDown = false;
   activePointerId = null;
   board.endStroke();
+  // Cells and clue marks were updated in place during the stroke. Avoid
+  // rebuilding the whole grid on pointer-up; update only the tool states.
+  $('undoButton').disabled = !board.canUndo();
+  $('hintButton').disabled = !hasHintCandidate();
   save();
-  render();
   checkComplete();
 }
 if ('ResizeObserver' in window) {
@@ -271,7 +273,7 @@ function checkComplete() {
   const finishedLevel = puzzle.level;
   progress = completeLevel(progress, finishedLevel, puzzle.fingerprint, puzzle.points);
   persist();
-  $('feedback').textContent = `✦ Level ${finishedLevel} cleared! Next one…` + ` · ${progress.points} points` + (storageWarning ? ' · Save unavailable' : '');
+  announceStatus(`Level ${finishedLevel} complete. Loading the next puzzle.`);
   $('board').classList.add('board-complete');
   // The next puzzle starts automatically. Progress is committed first, so a
   // refresh during this short celebration resumes at the next level.
@@ -326,7 +328,7 @@ async function shareGame() {
   try {
     if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
     await navigator.clipboard.writeText(shareData.url);
-    $('feedback').textContent = 'Game link copied. Share the puzzle with a friend!';
+    announceStatus('Game link copied.');
   } catch {
     window.prompt('Copy this link to share the game:', shareData.url);
   }
@@ -337,12 +339,12 @@ document.querySelectorAll('[data-tool]').forEach(btn=>btn.addEventListener('clic
 $('undoButton').addEventListener('click',()=>{if(board.undo()){save();render();}});
 $('hintButton').addEventListener('click',()=>{
   const purchase = spendHintPoints(progress);
-  if (!purchase.success) { $('feedback').textContent = `Need ${HINT_COST} points for a hint · You have ${progress.points}`; return; }
+  if (!purchase.success) { announceStatus(`A hint costs ${HINT_COST} points. You have ${progress.points}.`); return; }
   const revealed = board.giveHint(puzzle.solution);
-  if (revealed) { progress = purchase.progress; lastHint = revealed; save(); render(); checkComplete(); }
+  if (revealed) { progress = purchase.progress; lastHint = revealed; save(); render(); announceStatus('Hint revealed.'); checkComplete(); }
 });
 try { loadLevel(progress.currentLevel || 1); }
-catch(error) { console.error(error); $('feedback').textContent='Could not create this puzzle. Reload to try again.'; }
+catch(error) { console.error(error); announceStatus('Could not create this puzzle. Reload to try again.'); }
 
 
 // GitHub Pages is served over HTTPS, so the app can install its offline shell.

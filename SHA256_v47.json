@@ -1,0 +1,18 @@
+{
+  "release": "v47",
+  "purpose": "GitHub Pages deployment payload",
+  "files": {
+    "index.html": "193c8c72ffa1debbac1a784b9a5b8647631bede2c3e6f983231f966c758aacdb",
+    "manifest.webmanifest": "9bd77444ce3b5001e7c2b1b7bae41c974fe6a454843c72033a893f85c3ce2974",
+    "service-worker.js": "835ce61d80363710c9e199b213de85fc5f79b005d066028d20e07e7595c5eaee",
+    "web-port/app.js": "c9b54c01f16d1087077b2c45c1730dd4d14517b55cd2144a5b3f45f96e4f6e8c",
+    "web-port/interaction.js": "a0c5e3df26ee83af1988c4ea75f28fe5ee3f90adec4c2d748b612badb0af5e73",
+    "web-port/keyboard-input.js": "fb37511f58b9564572b7c334110c11226adf0122a66882c5a6f53b57d8eeef7c",
+    "web-port/layout.js": "2497d0cbb6b42acb6a5fc95bb217c3ac0e193691e4f70e55bd4a13a18330b040",
+    "web-port/nonogram.js": "147d0598e0f0517e6b89aad6c4b1a3689b7f2085de032a5e050124ff27c5fbcb",
+    "web-port/pointer-input.js": "48be062cf5337f2f9e10764f7af4687994b132be86100f4837170486b40c31cf",
+    "web-port/progress.js": "12a857044a86cf396f912ce6a12386f677732ed2c89e521c25dafc1fe571ee2b",
+    "web-port/storage.js": "2ee2b6a753fdfb9e726bda7f76e3d04a492ccfae46135ccf564356dafae4c224",
+    "web-port/styles.css": "3199624d4ecd1165e88286e39e71132547881c7b9a522999b45e00829b7736a6"
+  }
+}
