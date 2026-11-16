@@ -1,0 +1,30 @@
+
+> stress:endless
+> node scripts/endless-run-stress.mjs
+
+{
+  "requestedLevels": 2000,
+  "generated": 2000,
+  "failures": 0,
+  "uniqueSolutionFingerprints": 2000,
+  "recentFingerprintWindow": 2000,
+  "gridSizes": {
+    "5x5": 668,
+    "6x6": 670,
+    "7x7": 662
+  },
+  "maxAttempts": 22,
+  "density": {
+    "min": 0.32,
+    "average": 0.5011083446712012,
+    "max": 0.6
+  },
+  "clueRunsAcrossTenLines": {
+    "min": 10,
+    "average": 21.603,
+    "max": 36
+  },
+  "totalCellsGenerated": 73258,
+  "allTimeUniqueFingerprints": 2000,
+  "elapsedMs": 2323
+}

@@ -1,0 +1,25 @@
+Nonogram v44 automated QA
+Date: 2026-11-16
+
+Automated checks
+- npm test: 82 passed, 0 failed
+- Contrast regression: all six palettes exceed 7:1 primary text, 4.5:1 supporting text/action and 3:1 large-title thresholds.
+- npm run audit: passed; 18 unique HTML ids, 14 direct app id references, 18 named buttons, 8 JS modules checked
+- npm run stress:generator: 340 samples, 0 failures, max attempts 16
+- npm run stress:difficulties: 60 samples across Easy/Normal/Hard, 0 failures; Hard includes 12x12
+- npm run stress:endless: 2,000 puzzles, 0 failures, 2,000 unique solution fingerprints, max attempts 22
+
+Feature checks in source/tests
+- Direct game launch and saved-level resume retained
+- SVG heart/home, Share, Settings and About controls present
+- Six palette choices and separate theme preference key
+- Theme contrast regression covers all six palettes
+- Difficulty chooser in Settings; save isolation unchanged
+- About intro and repository URL present
+- Reduced-motion CSS remains present
+- Service-worker cache bumped to v8
+
+Not verified
+- Real Android screenshots/touch behaviour
+- Visual browser E2E. A local Chromium navigation attempt was blocked by the execution environment.
+- Actual Android share sheet, clipboard fallback and PWA offline relaunch

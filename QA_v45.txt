@@ -1,0 +1,26 @@
+NONOGRAM v45 - SIMPLE GAME-SURFACE POLISH
+========================================
+
+CHANGES
+-------
+- Play screen simplified to follow the supplied original-game screenshot.
+- Removed subtitle from the active play screen; game introduction remains in About.
+- Points moved to the center of the top bar.
+- Large round Undo / Fill / Cross icon controls replace the labelled toolbar.
+- Labels remain accessible to screen readers.
+- Grid line and clue hierarchy tuned; responsive square-grid sizing retained.
+- No changes to generator, puzzle rules, drag engine, undo model, progress or save schema.
+- Service-worker cache advanced to v9.
+
+VERIFICATION
+------------
+- npm test: 84 passed, 0 failed.
+- npm run audit: passed.
+- Generator stress: 340 samples, 0 failures.
+- Difficulty stress: 60 samples, 0 failures, includes 12x12.
+- Endless stress: 2,000 puzzles, 0 failures, 2,000 unique fingerprints.
+
+NOT VERIFIED
+------------
+- Real Android screenshots/touch feel across physical devices.
+- Actual browser render and share sheet. These remain manual release checks.

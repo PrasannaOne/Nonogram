@@ -1,0 +1,22 @@
+IL2CPP v29 GENERIC METHOD POINTER INVESTIGATION
+=======================================================
+
+Generic method pointers: 28047 at 0x19f83f8
+Generic method table entries: 28132 at 0x1448314
+Method specs: 34734 at 0x14b7e1c
+MetadataRegistration verified base: 0x19e8620
+
+Generic method table entries with invalid indexes: 0
+TARGET RESOLUTIONS:
+0x12dc16c => mscorlib.dll :: System.Func`2..ctor token=0x06000345 [spec=11058 methodIndex=9781]
+0x92bdd8 => mscorlib.dll :: System.Collections.Generic.List`1..ctor token=0x0600268e [spec=16251 methodIndex=14374]
+0x92dac0 => mscorlib.dll :: System.Collections.Generic.List`1.RemoveAt token=0x060026ba [spec=16277 methodIndex=14400]
+0x92c1d0 => mscorlib.dll :: System.Collections.Generic.List`1.get_Item token=0x06002697 [spec=16304 methodIndex=14427]
+0xd6b330 => mscorlib.dll :: System.Collections.Generic.List`1..ctor token=0x0600268c [spec=16598 methodIndex=14721]
+0xd6bd0c => mscorlib.dll :: System.Collections.Generic.List`1.AddRange token=0x0600269f [spec=16603 methodIndex=14726]
+0xb175b4 => System.Core.dll :: System.Linq.Enumerable.All token=0x0600007c [spec=30415 methodIndex=26882]
+0xb1f7d0 => System.Core.dll :: System.Linq.Enumerable.Skip token=0x06000062 [spec=30499 methodIndex=26942]
+0xb1f8b4 => System.Core.dll :: System.Linq.Enumerable.Take token=0x06000060 [spec=30503 methodIndex=26945]
+0xb20a4c => System.Core.dll :: System.Linq.Enumerable.ToList token=0x0600006a [spec=30524 methodIndex=26961]
+
+Important: generic method entries include shared instantiations; method-definition resolution identifies the generic definition, not necessarily the concrete type arguments.

@@ -1,0 +1,27 @@
+
+> stress:difficulties
+> node scripts/difficulty-stress.mjs
+
+{
+  "samplesPerMode": 20,
+  "total": 60,
+  "modes": {
+    "easy": {
+      "attempts": 10,
+      "largestSize": 7,
+      "samples": 20
+    },
+    "normal": {
+      "attempts": 20,
+      "largestSize": 9,
+      "samples": 20
+    },
+    "hard": {
+      "attempts": 8,
+      "largestSize": 12,
+      "samples": 20
+    }
+  },
+  "failures": [],
+  "elapsedMs": 18091
+}

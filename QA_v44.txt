@@ -1,0 +1,49 @@
+NONOGRAM v44 - IMPLEMENTATION AND QA REPORT
+===========================================
+Date: 2026-11-16
+Baseline: v43 compact project source
+
+WHAT CHANGED
+------------
+- Rebuilt the visible screen around a centered, original-inspired Nonogram
+  title, quieter game intro, level/dimension caption and improved grid contrast.
+- Added SVG heart/home link to https://prasannaone.github.io/.
+- Added Share using the native Web Share API, then clipboard, then manual-copy
+  prompt when browser capabilities are unavailable.
+- Added Settings and About native modal dialogs.
+- Added six palettes: Lavender, Ocean, Rose, Forest, Midnight and AMOLED black.
+- Theme preference uses its own local-storage key and does not overwrite game
+  profiles or puzzle progress.
+- Moved Easy / Normal / Hard selection into Settings; mode-isolated saves and
+  unfinished boards are unchanged.
+- Added a short how-to-play introduction, creator credit and repository link
+  to https://github.com/PrasannaOne/Nonogram.
+- Added restrained transitions and retained reduced-motion support.
+- Bumped service-worker cache from v7 to v8 and updated PWA description/colors.
+
+VERIFICATION
+------------
+- npm test: 82 passed, 0 failed.
+- npm run audit: passed; no duplicate IDs, missing referenced elements,
+  missing local assets/modules or unnamed controls.
+- Contrast regression covers all six palette presets: minimum 7:1 for primary
+  text, 4.5:1 for supporting text/action text, and 3:1 for large title text.
+- npm run stress:generator: 340 samples, 0 failures, max attempts 16.
+- npm run stress:difficulties: 60 samples across Easy / Normal / Hard,
+  0 failures; Hard includes 12x12.
+- npm run stress:endless: 2,000 puzzles, 0 failures, 2,000 unique solution
+  fingerprints, max attempts 22.
+- Generator, puzzle interaction and progress/persistence implementation files
+  were not rewritten for this UI pass.
+
+NOT VERIFIED
+------------
+- Real Android device screenshots, touch gestures and 12x12 clue readability.
+- Live browser visual test. A local Chromium navigation attempt was blocked by
+  the execution environment; no visual pass is claimed.
+- Android native share sheet, clipboard fallback and PWA offline relaunch.
+
+NEXT
+----
+Run the deployment package through GitHub Pages, then complete the manual
+Android/browser checklist in PROJECT/RELEASE_CHECKLIST.md.

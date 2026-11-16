@@ -1,0 +1,41 @@
+PRASANNAONE NONOGRAM v47 - DEEP QA REPORT
+=======================================
+
+CHANGE
+------
+- Added a dedicated circular Erase tool alongside Undo, Fill and Cross.
+- The existing TOOL.ERASE model operation was already implemented; the
+  omission was in the game interface. The new button now selects that mode.
+- Erase clears both filled and crossed cells; repeating a visited cell during
+  the same stroke is harmless and creates no inversion.
+- Four circular controls fit portrait and compact layouts; landscape uses
+  four vertically stacked targets.
+- Service-worker cache advanced from v10 to v11 so clients fetch the new shell.
+
+AUTOMATED VERIFICATION
+----------------------
+npm test:                  92 passed, 0 failed
+npm run audit:             passed (17 unique HTML ids, 13 direct app id refs,
+                            19 named HTML buttons, 8 JS modules)
+JavaScript syntax checks:  8 modules passed
+Generator stress:          340 samples, 0 failures
+Difficulty stress:         60 samples, 0 failures (Hard includes 12x12)
+Endless stress:            2,000 generated, 2,000 unique fingerprints, 0 failures
+Source/deployment parity:  all 12 runtime files byte-identical
+ZIP integrity:             checked after packaging
+
+DEEP REVIEW NOTES
+-----------------
+- Erase is a first-class tool mode; it is not a visual-only shortcut.
+- Existing Fill and Cross fixed-intent stroke behaviour remains unchanged.
+- Undo remains the existing bounded 10-cell action history.
+- Generator, difficulty schedules, points/progress schema and save migration
+  were not changed in this release.
+- Service-worker cache version was incremented to invalidate stale v46 assets.
+
+NOT CLAIMED AS VERIFIED
+-----------------------
+Real Android touch latency, visual appearance on physical devices, browser
+end-to-end interaction, PWA installation/offline behaviour and live service
+worker replacement still need device/browser QA. Automated tests cannot
+establish actual touch smoothness.

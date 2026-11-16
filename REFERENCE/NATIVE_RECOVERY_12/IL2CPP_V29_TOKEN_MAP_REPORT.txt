@@ -1,0 +1,232 @@
+IL2CPP v29 REGISTRATION + TOKEN MAP
+===========================================
+
+ELF SHA256: 4eebd81e9a28b556faf0ccaa2b70e7402b137e9e669284c70eb1b0d24466ee9f
+METADATA SHA256: 8c254808d083face6b981a6b3a0ae0886730f7a766a79dc672c12b6eb4cc9afd
+Metadata v29 counts: methods=41767, types=5997, images=40
+Applied relocations: {'R_AARCH64_RELATIVE': 171795, 'R_AARCH64_ABS64': 1567}
+Skipped relocation types: {1025: 151}
+mscorlib.dll strings in executable-mapped PT_LOAD: 1
+CodeRegistration candidates: 1
+CodeRegistration VA: 0x19d8248
+CodeGenModules count: 40
+CodeGenModules pointer: 0x1ada620
+CodeGenModules parsed: 40
+Modules with structurally readable method pointer arrays: 40/40
+
+MODULE 00 Assembly-CSharp.dll VA=0x1a68300 methodPointerCount=389 arrayValid=True
+MODULE 01 GoogleMobileAds.Android.dll VA=0x1a67bc8 methodPointerCount=229 arrayValid=True
+MODULE 02 GoogleMobileAds.dll VA=0x1a2f070 methodPointerCount=54 arrayValid=True
+MODULE 03 GoogleMobileAds.Common.dll VA=0x19e80d8 methodPointerCount=81 arrayValid=True
+MODULE 04 GoogleMobileAds.Core.dll VA=0x1a727d0 methodPointerCount=79 arrayValid=True
+MODULE 05 Mono.Security.dll VA=0x19f8058 methodPointerCount=425 arrayValid=True
+MODULE 06 Newtonsoft.Json.dll VA=0x1a6cc48 methodPointerCount=2304 arrayValid=True
+MODULE 07 System.dll VA=0x1a68228 methodPointerCount=3746 arrayValid=True
+MODULE 08 System.Core.dll VA=0x19f7d28 methodPointerCount=3093 arrayValid=True
+MODULE 09 System.Data.dll VA=0x19e8d60 methodPointerCount=3099 arrayValid=True
+MODULE 10 System.Numerics.dll VA=0x19f8370 methodPointerCount=146 arrayValid=True
+MODULE 11 System.Runtime.Serialization.dll VA=0x19f8260 methodPointerCount=6 arrayValid=True
+MODULE 12 System.Xml.dll VA=0x19f7f48 methodPointerCount=5811 arrayValid=True
+MODULE 13 System.Xml.Linq.dll VA=0x19e8ff8 methodPointerCount=226 arrayValid=True
+MODULE 14 UnityEngine.AndroidJNIModule.dll VA=0x1a67738 methodPointerCount=403 arrayValid=True
+MODULE 15 UnityEngine.AnimationModule.dll VA=0x1a7b528 methodPointerCount=48 arrayValid=True
+MODULE 16 UnityEngine.AudioModule.dll VA=0x1a68388 methodPointerCount=28 arrayValid=True
+MODULE 17 UnityEngine.dll VA=0x19f7fd0 methodPointerCount=0 arrayValid=True
+MODULE 18 UnityEngine.CoreModule.dll VA=0x1a7c440 methodPointerCount=1862 arrayValid=True
+MODULE 19 UnityEngine.GridModule.dll VA=0x19f81d8 methodPointerCount=0 arrayValid=True
+MODULE 20 UnityEngine.IMGUIModule.dll VA=0x19e8050 methodPointerCount=460 arrayValid=True
+MODULE 21 UnityEngine.InputLegacyModule.dll VA=0x19e7fc8 methodPointerCount=54 arrayValid=True
+MODULE 22 UnityEngine.Physics2DModule.dll VA=0x19e8598 methodPointerCount=5 arrayValid=True
+MODULE 23 UnityEngine.PhysicsModule.dll VA=0x19e8728 methodPointerCount=4 arrayValid=True
+MODULE 24 UnityEngine.ScreenCaptureModule.dll VA=0x1a7b3d8 methodPointerCount=2 arrayValid=True
+MODULE 25 UnityEngine.SharedInternalsModule.dll VA=0x19e8de8 methodPointerCount=6 arrayValid=True
+MODULE 26 UnityEngine.SpriteShapeModule.dll VA=0x19e86a0 methodPointerCount=0 arrayValid=True
+MODULE 27 UnityEngine.TextCoreFontEngineModule.dll VA=0x19f8150 methodPointerCount=115 arrayValid=True
+MODULE 28 UnityEngine.TextCoreTextEngineModule.dll VA=0x19f7e50 methodPointerCount=364 arrayValid=True
+MODULE 29 UnityEngine.TextRenderingModule.dll VA=0x19e8e70 methodPointerCount=47 arrayValid=True
+MODULE 30 UnityEngine.TilemapModule.dll VA=0x19e9080 methodPointerCount=0 arrayValid=True
+MODULE 31 UnityEngine.UIElementsModule.dll VA=0x1a6b770 methodPointerCount=5346 arrayValid=True
+MODULE 32 UnityEngine.UIElementsNativeModule.dll VA=0x1a7b4a0 methodPointerCount=244 arrayValid=True
+MODULE 33 UnityEngine.UIModule.dll VA=0x19f36d0 methodPointerCount=102 arrayValid=True
+MODULE 34 UnityEngine.UI.dll VA=0x19e8510 methodPointerCount=1782 arrayValid=True
+MODULE 35 UnityEngine.UnityAnalyticsModule.dll VA=0x19f82e8 methodPointerCount=12 arrayValid=True
+MODULE 36 UnityEngine.UnityWebRequestModule.dll VA=0x1a72748 methodPointerCount=6 arrayValid=True
+MODULE 37 Unity.TextMeshPro.dll VA=0x1a67b40 methodPointerCount=1001 arrayValid=True
+MODULE 38 __Generated VA=0x1a7c4c8 methodPointerCount=3 arrayValid=True
+MODULE 39 mscorlib.dll VA=0x1a726c0 methodPointerCount=10185 arrayValid=True
+
+TARGET METHOD MAP (if available)
+Assembly-CSharp.dll :: .AdvertisementManager.Start 0x06000005 RID=5 => 0x114f60c [OK]
+Assembly-CSharp.dll :: .AdvertisementManager.OnDestroy 0x06000006 RID=6 => 0x114f73c [OK]
+Assembly-CSharp.dll :: .AdvertisementManager.RequestInterstitial 0x06000007 RID=7 => 0x114f770 [OK]
+Assembly-CSharp.dll :: .AdvertisementManager.InterstitialIsLoaded 0x06000008 RID=8 => 0x114f898 [OK]
+Assembly-CSharp.dll :: .AdvertisementManager.ShowInterstitial 0x06000009 RID=9 => 0x114f8b4 [OK]
+Assembly-CSharp.dll :: .AdvertisementManager.OnInterstitialClosed 0x0600000a RID=10 => 0x114f8d0 [OK]
+Assembly-CSharp.dll :: .AdvertisementManager.RequestBannerAd 0x0600000b RID=11 => 0x114f624 [OK]
+Assembly-CSharp.dll :: .AdvertisementManager..ctor 0x0600000c RID=12 => 0x114f8f8 [OK]
+Assembly-CSharp.dll :: .Cheats.Start 0x0600000d RID=13 => 0x114f900 [OK]
+Assembly-CSharp.dll :: .Cheats.Update 0x0600000e RID=14 => 0x114f994 [OK]
+Assembly-CSharp.dll :: .Cheats.Execute 0x0600000f RID=15 => 0x114fc14 [OK]
+Assembly-CSharp.dll :: .Cheats..ctor 0x06000010 RID=16 => 0x114ff68 [OK]
+Assembly-CSharp.dll :: .Cheats.<Update>b__9_0 0x06000011 RID=17 => 0x114ff70 [OK]
+Assembly-CSharp.dll :: .EasyGamemode.get_Levels 0x06000012 RID=18 => 0x114ffe0 [OK]
+Assembly-CSharp.dll :: .EasyGamemode.GenerateNewLevels 0x06000013 RID=19 => 0x114ffe8 [OK]
+Assembly-CSharp.dll :: .EasyGamemode.OnLevelComplete 0x06000014 RID=20 => 0x115049c [OK]
+Assembly-CSharp.dll :: .EasyGamemode.GetLevelsForPage 0x06000015 RID=21 => 0x1151078 [OK]
+Assembly-CSharp.dll :: .EasyGamemode.GetPageCount 0x06000016 RID=22 => 0x1151114 [OK]
+Assembly-CSharp.dll :: .EasyGamemode.Save 0x06000017 RID=23 => 0x11511c8 [OK]
+Assembly-CSharp.dll :: .EasyGamemode.Load 0x06000018 RID=24 => 0x11512b4 [OK]
+Assembly-CSharp.dll :: .EasyGamemode..ctor 0x06000019 RID=25 => 0x11513d8 [OK]
+Assembly-CSharp.dll :: .Global.get_PopupBuilder 0x06000043 RID=67 => 0x115292c [OK]
+Assembly-CSharp.dll :: .Global.GetInstance 0x06000044 RID=68 => 0x114f918 [OK]
+Assembly-CSharp.dll :: .Global.ShowGameplayInfoPopups 0x06000045 RID=69 => 0x1152a08 [OK]
+Assembly-CSharp.dll :: .Global..ctor 0x06000046 RID=70 => 0x1152990 [OK]
+Assembly-CSharp.dll :: .IUndoable.Undo 0x06000050 RID=80 => <none> [NULL]
+Assembly-CSharp.dll :: .BasicUndo..ctor 0x06000051 RID=81 => 0x1153830 [OK]
+Assembly-CSharp.dll :: .BasicUndo.Undo 0x06000052 RID=82 => 0x1153858 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetLevelsCompleted 0x06000053 RID=83 => 0x115387c [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetPage 0x06000054 RID=84 => 0x11538e0 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetPoints 0x06000055 RID=85 => 0x114ff04 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetEasyGamemode 0x06000056 RID=86 => 0x1153944 [OK]
+Assembly-CSharp.dll :: .LanguageManager.MediumGamemode 0x06000057 RID=87 => 0x11539a8 [OK]
+Assembly-CSharp.dll :: .LanguageManager.HardGamemode 0x06000058 RID=88 => 0x1153a0c [OK]
+Assembly-CSharp.dll :: .LanguageManager.MixGamemode 0x06000059 RID=89 => 0x1153a70 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetFirstTimeTitle 0x0600005a RID=90 => 0x1153ad4 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetFirstTimeText 0x0600005b RID=91 => 0x1153b38 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetLetsPlay 0x0600005c RID=92 => 0x1152dfc [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetHintInfoHeader 0x0600005d RID=93 => 0x1153c04 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetHintInfoBody 0x0600005e RID=94 => 0x1153c68 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetContinue 0x0600005f RID=95 => 0x115310c [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetNextLevelTime 0x06000060 RID=96 => 0x1153d38 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetNextLevelPointsEarned 0x06000061 RID=97 => 0x1153d9c [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetKeepPlaying 0x06000062 RID=98 => 0x1153e00 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetNextLevelTimesCompleted 0x06000063 RID=99 => 0x1153e64 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetNext 0x06000064 RID=100 => 0x1153ec8 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetReplay 0x06000065 RID=101 => 0x1153f2c [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetNextLevelButtonMainMenu 0x06000066 RID=102 => 0x1153f90 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetDoYouReallyWantToQuit 0x06000067 RID=103 => 0x1153ff4 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetQuit 0x06000068 RID=104 => 0x1154058 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTextAboutBack 0x06000069 RID=105 => 0x1152d90 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTextAboutClear 0x0600006a RID=106 => 0x11530a8 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTextAboutHints 0x0600006b RID=107 => 0x11532ec [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTextAboutMainGame 0x0600006c RID=108 => 0x1153404 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTextAboutExtraFunctions 0x0600006d RID=109 => 0x11531d4 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTitleAboutBack 0x0600006e RID=110 => 0x1152d24 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTitleAboutClear 0x0600006f RID=111 => 0x1153044 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTitleAboutExtraFunctions 0x06000070 RID=112 => 0x1153170 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTitleAboutHints 0x06000071 RID=113 => 0x1153288 [OK]
+Assembly-CSharp.dll :: .LanguageManager.GetInfoTitleAboutMainGame 0x06000072 RID=114 => 0x11533a0 [OK]
+Assembly-CSharp.dll :: .ActiveButton.get_ActiveState 0x06000073 RID=115 => 0x11540bc [OK]
+Assembly-CSharp.dll :: .ActiveButton.set_ActiveState 0x06000074 RID=116 => 0x11540c4 [OK]
+Assembly-CSharp.dll :: .ActiveButton.Start 0x06000075 RID=117 => 0x11540cc [OK]
+Assembly-CSharp.dll :: .ActiveButton.SetActive 0x06000076 RID=118 => 0x11543c4 [OK]
+Assembly-CSharp.dll :: .ActiveButton..ctor 0x06000077 RID=119 => 0x11544dc [OK]
+Assembly-CSharp.dll :: .LevelCreator.DrawLevel 0x0600007b RID=123 => 0x1154580 [OK]
+Assembly-CSharp.dll :: .LevelCreator.DrawRowLabels 0x0600007c RID=124 => 0x1154c28 [OK]
+Assembly-CSharp.dll :: .LevelCreator.DrawColumnLabels 0x0600007d RID=125 => 0x1154ef0 [OK]
+Assembly-CSharp.dll :: .LevelCreator.DrawTiles 0x0600007e RID=126 => 0x11551bc [OK]
+Assembly-CSharp.dll :: .LevelCreator.SpawnTile 0x0600007f RID=127 => 0x1155334 [OK]
+Assembly-CSharp.dll :: .LevelCreator.SpawnLabelRow 0x06000080 RID=128 => 0x1154e48 [OK]
+Assembly-CSharp.dll :: .LevelCreator.SpawnLabelColumn 0x06000081 RID=129 => 0x1155110 [OK]
+Assembly-CSharp.dll :: .LevelCreator.SpawnLabel 0x06000082 RID=130 => 0x115565c [OK]
+Assembly-CSharp.dll :: .LevelCreator..ctor 0x06000083 RID=131 => 0x1155a50 [OK]
+Assembly-CSharp.dll :: .NextLevel.ShowNextLevelPopup 0x06000084 RID=132 => 0x1150654 [OK]
+Assembly-CSharp.dll :: .Tile.GetTilePosition 0x0600008e RID=142 => 0x115609c [OK]
+Assembly-CSharp.dll :: .Tile..ctor 0x0600008f RID=143 => 0x1155654 [OK]
+Assembly-CSharp.dll :: .TileStateButton..ctor 0x06000090 RID=144 => 0x11560ac [OK]
+Assembly-CSharp.dll :: .LevelGenerator.GenerateLevels 0x06000094 RID=148 => 0x1150098 [OK]
+Assembly-CSharp.dll :: .GamemodeManager.Start 0x06000095 RID=149 => 0x115619c [OK]
+Assembly-CSharp.dll :: .GamemodeManager..ctor 0x06000096 RID=150 => 0x11564e4 [OK]
+Assembly-CSharp.dll :: .LevelManager.Start 0x0600009d RID=157 => 0x1156648 [OK]
+Assembly-CSharp.dll :: .LevelManager.ShowInterstitial 0x0600009e RID=158 => 0x1156fe0 [OK]
+Assembly-CSharp.dll :: .LevelManager.StartShowInterstitial 0x0600009f RID=159 => 0x1157000 [OK]
+Assembly-CSharp.dll :: .LevelManager.DrawLevels 0x060000a0 RID=160 => 0x1156adc [OK]
+Assembly-CSharp.dll :: .LevelManager.ShowInsufficientPointsPopup 0x060000a1 RID=161 => 0x1157f14 [OK]
+Assembly-CSharp.dll :: .LevelManager.GiveRowColumnHint 0x060000a2 RID=162 => 0x1158038 [OK]
+Assembly-CSharp.dll :: .LevelManager.UpdateTiles 0x060000a3 RID=163 => 0x1158620 [OK]
+Assembly-CSharp.dll :: .LevelManager.Update 0x060000a4 RID=164 => 0x11586cc [OK]
+Assembly-CSharp.dll :: .LevelManager.TileRaycast 0x060000a5 RID=165 => 0x1158988 [OK]
+Assembly-CSharp.dll :: .LevelManager.CleanupRaycastData 0x060000a6 RID=166 => 0x115937c [OK]
+Assembly-CSharp.dll :: .LevelManager.RaycastClickTiles 0x060000a7 RID=167 => 0x1158ca8 [OK]
+Assembly-CSharp.dll :: .LevelManager.GiveHint 0x060000a8 RID=168 => 0x1159790 [OK]
+Assembly-CSharp.dll :: .LevelManager.TileClicked 0x060000a9 RID=169 => 0x11594c4 [OK]
+Assembly-CSharp.dll :: .LevelManager.IsLevelDone 0x060000aa RID=170 => 0x1159bdc [OK]
+Assembly-CSharp.dll :: .LevelManager.OnUndoClicked 0x060000ab RID=171 => 0x1159cd8 [OK]
+Assembly-CSharp.dll :: .LevelManager.ResetTiles 0x060000ac RID=172 => 0x1159ddc [OK]
+Assembly-CSharp.dll :: .LevelManager.CheckColumnComplete 0x060000ad RID=173 => 0x1157180 [OK]
+Assembly-CSharp.dll :: .LevelManager.CheckRowComplete 0x060000ae RID=174 => 0x115784c [OK]
+Assembly-CSharp.dll :: .LevelManager.AnimateTiles 0x060000af RID=175 => 0x115a104 [OK]
+Assembly-CSharp.dll :: .LevelManager.AnimateTile 0x060000b0 RID=176 => 0x1159a1c [OK]
+Assembly-CSharp.dll :: .LevelManager.IsMatch 0x060000b1 RID=177 => 0x115a010 [OK]
+Assembly-CSharp.dll :: .LevelManager.UpdateTile 0x060000b2 RID=178 => 0x1157098 [OK]
+Assembly-CSharp.dll :: .LevelManager.GetColor 0x060000b3 RID=179 => 0x115a1cc [OK]
+Assembly-CSharp.dll :: .LevelManager.GetSprite 0x060000b4 RID=180 => 0x115a1b0 [OK]
+Assembly-CSharp.dll :: .LevelManager.GetScale 0x060000b5 RID=181 => 0x115a22c [OK]
+Assembly-CSharp.dll :: .LevelManager.OnApplicationPause 0x060000b6 RID=182 => 0x115a28c [OK]
+Assembly-CSharp.dll :: .LevelManager.OnApplicationQuit 0x060000b7 RID=183 => 0x115a3f4 [OK]
+Assembly-CSharp.dll :: .LevelManager.OnDestroy 0x060000b8 RID=184 => 0x115a4a8 [OK]
+Assembly-CSharp.dll :: .LevelManager..ctor 0x060000b9 RID=185 => 0x115a5e8 [OK]
+Assembly-CSharp.dll :: .LevelManager.<Start>b__32_0 0x060000ba RID=186 => 0x115a6e8 [OK]
+Assembly-CSharp.dll :: .LevelManager.<Start>b__32_1 0x060000bb RID=187 => 0x115a708 [OK]
+Assembly-CSharp.dll :: .LevelManager.<Start>b__32_2 0x060000bc RID=188 => 0x115a8a4 [OK]
+Assembly-CSharp.dll :: .LevelManager.<Start>b__32_3 0x060000bd RID=189 => 0x115aa20 [OK]
+Assembly-CSharp.dll :: .LevelManager.<Start>b__32_4 0x060000be RID=190 => 0x115aa24 [OK]
+Assembly-CSharp.dll :: .LevelManager.<GiveRowColumnHint>b__37_3 0x060000bf RID=191 => 0x115aa74 [OK]
+Assembly-CSharp.dll :: .LevelManager.<GiveRowColumnHint>b__37_7 0x060000c0 RID=192 => 0x115aaf4 [OK]
+Assembly-CSharp.dll :: .LevelsManager.Start 0x06000102 RID=258 => 0x115c004 [OK]
+Assembly-CSharp.dll :: .LevelsManager.SpawnLevels 0x06000103 RID=259 => 0x115c53c [OK]
+Assembly-CSharp.dll :: .LevelsManager.MovePage 0x06000104 RID=260 => 0x115cb28 [OK]
+Assembly-CSharp.dll :: .LevelsManager.RemoveLevels 0x06000105 RID=261 => 0x115cc60 [OK]
+Assembly-CSharp.dll :: .LevelsManager..ctor 0x06000106 RID=262 => 0x115cd10 [OK]
+Assembly-CSharp.dll :: .LevelsManager..cctor 0x06000107 RID=263 => 0x115cd18 [OK]
+Assembly-CSharp.dll :: .LevelsManager.<Start>b__12_1 0x06000108 RID=264 => 0x115cddc [OK]
+Assembly-CSharp.dll :: .LevelsManager.<Start>b__12_2 0x06000109 RID=265 => 0x115ce90 [OK]
+Assembly-CSharp.dll :: .MainMenuManager.Start 0x06000110 RID=272 => 0x115cf80 [OK]
+Assembly-CSharp.dll :: .MainMenuManager..ctor 0x06000111 RID=273 => 0x115d494 [OK]
+Assembly-CSharp.dll :: .TutorialManager..ctor 0x0600011e RID=286 => 0x115d998 [OK]
+Assembly-CSharp.dll :: .Navigator.NavigateToMainMenu 0x0600011f RID=287 => 0x11565ac [OK]
+Assembly-CSharp.dll :: .Navigator.NavigateToGamemodeMenu 0x06000120 RID=288 => 0x115cdf4 [OK]
+Assembly-CSharp.dll :: .Navigator.NavigateToTutorial 0x06000121 RID=289 => 0x115da98 [OK]
+Assembly-CSharp.dll :: .Navigator.NavigateToLevels 0x06000122 RID=290 => 0x1155ef4 [OK]
+Assembly-CSharp.dll :: .Navigator.NavigateToLevel 0x06000123 RID=291 => 0x1155df0 [OK]
+Assembly-CSharp.dll :: .Navigator.AnimateToScene 0x06000124 RID=292 => 0x115d9a0 [OK]
+Assembly-CSharp.dll :: .Navigator.Delay 0x06000125 RID=293 => 0x115db3c [OK]
+Assembly-CSharp.dll :: .Navigator..ctor 0x06000126 RID=294 => 0x115dbcc [OK]
+Assembly-CSharp.dll :: .NonogramLevel.Clear 0x0600012f RID=303 => 0x1155cc8 [OK]
+Assembly-CSharp.dll :: .NonogramLevel..ctor 0x06000130 RID=304 => 0x115610c [OK]
+Assembly-CSharp.dll :: .NonogramLevel.Complete 0x06000131 RID=305 => 0x1150640 [OK]
+Assembly-CSharp.dll :: .NonogramLevel.ToString 0x06000132 RID=306 => 0x115dd7c [OK]
+Assembly-CSharp.dll :: .Popup.Awake 0x06000133 RID=307 => 0x115dda0 [OK]
+Assembly-CSharp.dll :: .Popup.Set 0x06000134 RID=308 => 0x115ddc0 [OK]
+Assembly-CSharp.dll :: .Popup.Show 0x06000135 RID=309 => 0x11534b8 [OK]
+Assembly-CSharp.dll :: .Popup..ctor 0x06000136 RID=310 => 0x115e038 [OK]
+Assembly-CSharp.dll :: .PopupBuilder.SetTitle 0x06000137 RID=311 => 0x1152d88 [OK]
+Assembly-CSharp.dll :: .PopupBuilder.SetBody 0x06000138 RID=312 => 0x1152df4 [OK]
+Assembly-CSharp.dll :: .PopupBuilder.AddButton 0x06000139 RID=313 => 0x1152e60 [OK]
+Assembly-CSharp.dll :: .PopupBuilder.SetExtra 0x0600013a RID=314 => 0x115d48c [OK]
+Assembly-CSharp.dll :: .PopupBuilder.Build 0x0600013b RID=315 => 0x1152f30 [OK]
+Assembly-CSharp.dll :: .PopupBuilder..ctor 0x0600013c RID=316 => 0x115e040 [OK]
+Assembly-CSharp.dll :: .RewardedAdvertisementManager.Start 0x0600013d RID=317 => 0x115e0bc [OK]
+Assembly-CSharp.dll :: .RewardedAdvertisementManager.Update 0x0600013e RID=318 => 0x115e224 [OK]
+Assembly-CSharp.dll :: .RewardedAdvertisementManager.OnDestroy 0x0600013f RID=319 => 0x115e2e0 [OK]
+Assembly-CSharp.dll :: .RewardedAdvertisementManager.RequestVideoAd 0x06000140 RID=320 => 0x115e19c [OK]
+Assembly-CSharp.dll :: .RewardedAdvertisementManager.ShowVideoAd 0x06000141 RID=321 => 0x115aa58 [OK]
+Assembly-CSharp.dll :: .RewardedAdvertisementManager.HandleUserEarnedReward 0x06000142 RID=322 => 0x115e2f4 [OK]
+Assembly-CSharp.dll :: .RewardedAdvertisementManager..ctor 0x06000143 RID=323 => 0x115e370 [OK]
+Assembly-CSharp.dll :: .UndoStack.Push 0x06000144 RID=324 => 0x1159444 [OK]
+Assembly-CSharp.dll :: .UndoStack.Undo 0x06000145 RID=325 => 0x1159cf0 [OK]
+Assembly-CSharp.dll :: .UndoStack.CanUndo 0x06000146 RID=326 => 0x1158c6c [OK]
+Assembly-CSharp.dll :: .UndoStack..ctor 0x06000147 RID=327 => 0x115a690 [OK]
+Assembly-CSharp.dll :: .IStorageSystem.Read 0x0600014c RID=332 => <none> [NULL]
+Assembly-CSharp.dll :: .IStorageSystem.Write 0x0600014d RID=333 => <none> [NULL]
+Assembly-CSharp.dll :: .LocalStorageSystem.Read 0x0600014e RID=334 => <none> [NULL]
+Assembly-CSharp.dll :: .LocalStorageSystem.Write 0x0600014f RID=335 => <none> [NULL]
+Assembly-CSharp.dll :: .LocalStorageSystem..ctor 0x06000150 RID=336 => 0x11534d8 [OK]
+Assembly-CSharp.dll :: .LocalStorageSystem..cctor 0x06000151 RID=337 => 0x115e3f4 [OK]
+
+Total mapped method rows (all Assembly-CSharp + named classes): 389
+Mapped OK: 371
+Null: 18
+Other/unresolved: 0
+
+IMPORTANT: Addresses are emitted only after validating the ELF load mapping, relocated pointers, unique CodeRegistration chain, CodeGenModules count vs metadata image count, and per-entry executable range. Method boundaries and semantics still require disassembly.

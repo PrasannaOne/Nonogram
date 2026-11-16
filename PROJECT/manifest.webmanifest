@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Nonogram · PrasannaOne",
+  "short_name": "Nonogram",
+  "description": "A little logic, one square at a time. An endless Nonogram by PrasannaOne.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f4fb",
+  "theme_color": "#f7f4fb",
+  "icons": [
+    { "src": "icons/nonogram-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/nonogram-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

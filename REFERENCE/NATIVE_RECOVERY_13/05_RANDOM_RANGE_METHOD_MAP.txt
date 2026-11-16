@@ -1,0 +1,14 @@
+UNITY RANDOM METHOD MAP
+=======================
+
+The call target 0xe2f584 in LevelGenerator.GenerateLevels maps to:
+- Image/module: UnityEngine.CoreModule.dll
+- Type: UnityEngine.Random
+- Method: Range(int, int)
+- Metadata method token: 0x0600023d
+- Native VA: 0xe2f584
+
+This was independently resolved by matching the UnityEngine.Random metadata
+method RID against the validated UnityEngine.CoreModule CodeGenModule method
+pointer array. It confirms both the size-index call and per-cell 0..2 call use
+the Unity integer Random.Range overload.

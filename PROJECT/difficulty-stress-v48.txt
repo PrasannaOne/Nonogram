@@ -1,0 +1,1 @@
+60 difficulty samples; 0 failures; Hard includes 12x12.

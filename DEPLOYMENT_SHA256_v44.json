@@ -1,0 +1,63 @@
+{
+  "version": "v44",
+  "build": "Nonogram GitHub Pages payload",
+  "file_count": 14,
+  "files": {
+    "icons/nonogram-192.png": {
+      "sha256": "921c1e257515bbc6ebe1d1f5e172d613de0866054f056419040d3003afa2be05",
+      "size_bytes": 797
+    },
+    "icons/nonogram-512.png": {
+      "sha256": "cd56769dd58a3057be83149a102b034eae3e68b274e7926ae87541c0c290fe3f",
+      "size_bytes": 2280
+    },
+    "index.html": {
+      "sha256": "5be42320cce63923814e7cea3fbab088f3e75666e97d9971b1b8b77cc11affa1",
+      "size_bytes": 7933
+    },
+    "manifest.webmanifest": {
+      "sha256": "9bd77444ce3b5001e7c2b1b7bae41c974fe6a454843c72033a893f85c3ce2974",
+      "size_bytes": 552
+    },
+    "service-worker.js": {
+      "sha256": "7ee3d0f9ad15ed7f1acdbc0615e7ba4b01780dc5e02f55337d41acdf434f6f22",
+      "size_bytes": 2054
+    },
+    "web-port/app.js": {
+      "sha256": "1dd60d17dfffb50ac0781aecf009aa85f3ba1fc3b6c5438fb15cb373625f552f",
+      "size_bytes": 18449
+    },
+    "web-port/interaction.js": {
+      "sha256": "7d24433ddd6e4ae915d8390050ce11e18910f69d46e45fa47394d406d7037635",
+      "size_bytes": 8249
+    },
+    "web-port/keyboard-input.js": {
+      "sha256": "fb37511f58b9564572b7c334110c11226adf0122a66882c5a6f53b57d8eeef7c",
+      "size_bytes": 1001
+    },
+    "web-port/layout.js": {
+      "sha256": "2497d0cbb6b42acb6a5fc95bb217c3ac0e193691e4f70e55bd4a13a18330b040",
+      "size_bytes": 1549
+    },
+    "web-port/nonogram.js": {
+      "sha256": "147d0598e0f0517e6b89aad6c4b1a3689b7f2085de032a5e050124ff27c5fbcb",
+      "size_bytes": 10484
+    },
+    "web-port/pointer-input.js": {
+      "sha256": "48be062cf5337f2f9e10764f7af4687994b132be86100f4837170486b40c31cf",
+      "size_bytes": 831
+    },
+    "web-port/progress.js": {
+      "sha256": "12a857044a86cf396f912ce6a12386f677732ed2c89e521c25dafc1fe571ee2b",
+      "size_bytes": 14470
+    },
+    "web-port/storage.js": {
+      "sha256": "2ee2b6a753fdfb9e726bda7f76e3d04a492ccfae46135ccf564356dafae4c224",
+      "size_bytes": 737
+    },
+    "web-port/styles.css": {
+      "sha256": "9e06a2c025823e34d81f62421a6114a15bfd5465e70e6f39b4dcd3418b940c40",
+      "size_bytes": 18426
+    }
+  }
+}

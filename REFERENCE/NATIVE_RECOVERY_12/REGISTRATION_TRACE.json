@@ -1,0 +1,442 @@
+{
+  "method_count": 41767,
+  "type_count": 5997,
+  "image_count": 40,
+  "code_reg_va": 27099720,
+  "code_reg_fields": [
+    "0x9",
+    "0x19d82c0",
+    "0x6d8f",
+    "0x19f83f8",
+    "0x19e9108",
+    "0x1ad9",
+    "0x19c8468",
+    "0x468",
+    "0x19d5e58",
+    "0x1a2",
+    "0x1ad4ab0",
+    "0x0",
+    "0x0",
+    "0x28",
+    "0x1ada620"
+  ],
+  "modules_count": 40,
+  "modules_ptr": "0x1ada620",
+  "traces": [
+    {
+      "dll_va": 22271848,
+      "ref1": 27731648,
+      "ref2": 28157784,
+      "image_index": 39,
+      "ref3": 27099832,
+      "images_count_before": 40,
+      "code_registration": 27099720
+    }
+  ],
+  "relocations_applied": {
+    "R_AARCH64_RELATIVE": 171795,
+    "R_AARCH64_ABS64": 1567
+  },
+  "modules": [
+    {
+      "index": 0,
+      "name": "Assembly-CSharp.dll",
+      "va": 27689728,
+      "method_pointer_count": 389,
+      "method_pointers_va": 28909744,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 5,
+      "rgctxs_count": 5
+    },
+    {
+      "index": 1,
+      "name": "GoogleMobileAds.Android.dll",
+      "va": 27687880,
+      "method_pointer_count": 229,
+      "method_pointers_va": 28876200,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 2,
+      "name": "GoogleMobileAds.dll",
+      "va": 27455600,
+      "method_pointer_count": 54,
+      "method_pointers_va": 28560904,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 3,
+      "name": "GoogleMobileAds.Common.dll",
+      "va": 27164888,
+      "method_pointer_count": 81,
+      "method_pointers_va": 28196104,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 4,
+      "name": "GoogleMobileAds.Core.dll",
+      "va": 27731920,
+      "method_pointer_count": 79,
+      "method_pointers_va": 29078656,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 5,
+      "name": "Mono.Security.dll",
+      "va": 27230296,
+      "method_pointer_count": 425,
+      "method_pointers_va": 28321256,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 6,
+      "name": "Newtonsoft.Json.dll",
+      "va": 27708488,
+      "method_pointer_count": 2304,
+      "method_pointers_va": 28965448,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 53,
+      "rgctxs_count": 325
+    },
+    {
+      "index": 7,
+      "name": "System.dll",
+      "va": 27689512,
+      "method_pointer_count": 3746,
+      "method_pointers_va": 28878032,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 12,
+      "rgctxs_count": 83
+    },
+    {
+      "index": 8,
+      "name": "System.Core.dll",
+      "va": 27229480,
+      "method_pointer_count": 3093,
+      "method_pointers_va": 28244008,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 207,
+      "rgctxs_count": 1117
+    },
+    {
+      "index": 9,
+      "name": "System.Data.dll",
+      "va": 27168096,
+      "method_pointer_count": 3099,
+      "method_pointers_va": 28212040,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 7,
+      "rgctxs_count": 91
+    },
+    {
+      "index": 10,
+      "name": "System.Numerics.dll",
+      "va": 27231088,
+      "method_pointer_count": 146,
+      "method_pointers_va": 28559336,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 11,
+      "name": "System.Runtime.Serialization.dll",
+      "va": 27230816,
+      "method_pointer_count": 6,
+      "method_pointers_va": 28559192,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 12,
+      "name": "System.Xml.dll",
+      "va": 27230024,
+      "method_pointer_count": 5811,
+      "method_pointers_va": 28272096,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 1,
+      "rgctxs_count": 7
+    },
+    {
+      "index": 13,
+      "name": "System.Xml.Linq.dll",
+      "va": 27168760,
+      "method_pointer_count": 226,
+      "method_pointers_va": 28241160,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 4,
+      "rgctxs_count": 16
+    },
+    {
+      "index": 14,
+      "name": "UnityEngine.AndroidJNIModule.dll",
+      "va": 27686712,
+      "method_pointer_count": 403,
+      "method_pointers_va": 28864248,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 23,
+      "rgctxs_count": 41
+    },
+    {
+      "index": 15,
+      "name": "UnityEngine.AnimationModule.dll",
+      "va": 27768104,
+      "method_pointer_count": 48,
+      "method_pointers_va": 29081336,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 16,
+      "name": "UnityEngine.AudioModule.dll",
+      "va": 27689864,
+      "method_pointer_count": 28,
+      "method_pointers_va": 28912872,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 17,
+      "name": "UnityEngine.dll",
+      "va": 27230160,
+      "method_pointer_count": 0,
+      "method_pointers_va": 0,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 18,
+      "name": "UnityEngine.CoreModule.dll",
+      "va": 27771968,
+      "method_pointer_count": 1862,
+      "method_pointers_va": 29082152,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 81,
+      "rgctxs_count": 233
+    },
+    {
+      "index": 19,
+      "name": "UnityEngine.GridModule.dll",
+      "va": 27230680,
+      "method_pointer_count": 0,
+      "method_pointers_va": 0,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 20,
+      "name": "UnityEngine.IMGUIModule.dll",
+      "va": 27164752,
+      "method_pointer_count": 460,
+      "method_pointers_va": 28192280,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 21,
+      "name": "UnityEngine.InputLegacyModule.dll",
+      "va": 27164616,
+      "method_pointer_count": 54,
+      "method_pointers_va": 28191560,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 22,
+      "name": "UnityEngine.Physics2DModule.dll",
+      "va": 27166104,
+      "method_pointer_count": 5,
+      "method_pointers_va": 28211840,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 23,
+      "name": "UnityEngine.PhysicsModule.dll",
+      "va": 27166504,
+      "method_pointer_count": 4,
+      "method_pointers_va": 28211944,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 24,
+      "name": "UnityEngine.ScreenCaptureModule.dll",
+      "va": 27767768,
+      "method_pointer_count": 2,
+      "method_pointers_va": 29079288,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 25,
+      "name": "UnityEngine.SharedInternalsModule.dll",
+      "va": 27168232,
+      "method_pointer_count": 6,
+      "method_pointers_va": 28240688,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 26,
+      "name": "UnityEngine.SpriteShapeModule.dll",
+      "va": 27166368,
+      "method_pointer_count": 0,
+      "method_pointers_va": 0,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 27,
+      "name": "UnityEngine.TextCoreFontEngineModule.dll",
+      "va": 27230544,
+      "method_pointer_count": 115,
+      "method_pointers_va": 28324656,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 2,
+      "rgctxs_count": 7
+    },
+    {
+      "index": 28,
+      "name": "UnityEngine.TextCoreTextEngineModule.dll",
+      "va": 27229776,
+      "method_pointer_count": 364,
+      "method_pointers_va": 28268944,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 5,
+      "rgctxs_count": 10
+    },
+    {
+      "index": 29,
+      "name": "UnityEngine.TextRenderingModule.dll",
+      "va": 27168368,
+      "method_pointer_count": 47,
+      "method_pointers_va": 28240736,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 30,
+      "name": "UnityEngine.TilemapModule.dll",
+      "va": 27168896,
+      "method_pointer_count": 0,
+      "method_pointers_va": 0,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 31,
+      "name": "UnityEngine.UIElementsModule.dll",
+      "va": 27703152,
+      "method_pointer_count": 5346,
+      "method_pointers_va": 28913160,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 87,
+      "rgctxs_count": 822
+    },
+    {
+      "index": 32,
+      "name": "UnityEngine.UIElementsNativeModule.dll",
+      "va": 27767968,
+      "method_pointer_count": 244,
+      "method_pointers_va": 29079304,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 2,
+      "rgctxs_count": 4
+    },
+    {
+      "index": 33,
+      "name": "UnityEngine.UIModule.dll",
+      "va": 27211472,
+      "method_pointer_count": 102,
+      "method_pointers_va": 28243192,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 34,
+      "name": "UnityEngine.UI.dll",
+      "va": 27165968,
+      "method_pointer_count": 1782,
+      "method_pointers_va": 28196752,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 14,
+      "rgctxs_count": 59
+    },
+    {
+      "index": 35,
+      "name": "UnityEngine.UnityAnalyticsModule.dll",
+      "va": 27230952,
+      "method_pointer_count": 12,
+      "method_pointers_va": 28559240,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 36,
+      "name": "UnityEngine.UnityWebRequestModule.dll",
+      "va": 27731784,
+      "method_pointer_count": 6,
+      "method_pointers_va": 29078608,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 37,
+      "name": "Unity.TextMeshPro.dll",
+      "va": 27687744,
+      "method_pointer_count": 1001,
+      "method_pointers_va": 28867472,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 12,
+      "rgctxs_count": 56
+    },
+    {
+      "index": 38,
+      "name": "__Generated",
+      "va": 27772104,
+      "method_pointer_count": 3,
+      "method_pointers_va": 29101552,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 0,
+      "rgctxs_count": 0
+    },
+    {
+      "index": 39,
+      "name": "mscorlib.dll",
+      "va": 27731648,
+      "method_pointer_count": 10185,
+      "method_pointers_va": 28984344,
+      "method_pointer_array_valid": true,
+      "rgctx_ranges_count": 207,
+      "rgctxs_count": 1436
+    }
+  ]
+}
