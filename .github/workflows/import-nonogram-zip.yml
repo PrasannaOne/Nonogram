@@ -24,26 +24,53 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Extract website and delete uploaded ZIP
+      - name: Remove old site and extract uploaded package
         shell: bash
         run: |
           set -euo pipefail
           test -s Nonogram.zip
+
           python - <<'PY'
+          import shutil
+          import stat
           import zipfile
           from pathlib import PurePosixPath
-          with zipfile.ZipFile("Nonogram.zip") as archive:
-              for item in archive.infolist():
+
+          archive_path = "Nonogram.zip"
+
+          # Validate the complete archive before changing the repository.
+          with zipfile.ZipFile(archive_path) as archive:
+              entries = archive.infolist()
+              for item in entries:
                   path = PurePosixPath(item.filename)
+                  mode = item.external_attr >> 16
                   if path.is_absolute() or ".." in path.parts:
                       raise SystemExit(f"Unsafe ZIP path: {item.filename}")
+                  if stat.S_ISLNK(mode):
+                      raise SystemExit(f"Symlink entries are not allowed: {item.filename}")
+
+          # Preserve GitHub Actions configuration and the uploaded archive.
+          # Remove all other repository-root content so stale site files cannot survive.
+          from pathlib import Path
+          root = Path(".")
+          for item in root.iterdir():
+              if item.name in {".git", ".github", "Nonogram.zip"}:
+                  continue
+              if item.is_dir() and not item.is_symlink():
+                  shutil.rmtree(item)
+              else:
+                  item.unlink()
+
+          # Extract only after validation and cleanup.
+          with zipfile.ZipFile(archive_path) as archive:
               archive.extractall(".")
               print(f"Extracted {len(archive.infolist())} entries")
-          PY
-          rm -f Nonogram.zip
-          touch .nojekyll
 
-      - name: Commit extracted website files
+          Path("Nonogram.zip").unlink(missing_ok=True)
+          Path(".nojekyll").touch()
+          PY
+
+      - name: Commit cleaned and extracted website
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -52,6 +79,5 @@ jobs:
             echo "No extracted changes to commit."
             exit 0
           fi
-          git commit -m "Deploy uploaded Nonogram package"
+          git commit -m "Replace old Nonogram site with uploaded package"
           git push origin HEAD:main
-          
