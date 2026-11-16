@@ -1,116 +1,284 @@
-import { generateEasyPuzzle } from './nonogram.js';
+
+import { generatePuzzle, generateLegacyEasyPuzzle } from './nonogram.js';
 import { PuzzleBoard, CELL, TOOL, getCompletedLines, isBoardComplete } from './interaction.js';
-import { createProgressRepository, createInitialProgress, completeLevel, setCurrentPuzzle } from './progress.js';
+import { createGameRepository, updateModeProgress, selectGameMode, completeLevel, setCurrentPuzzle, getSavedPuzzle, spendHintPoints, HINT_COST, GAME_MODES } from './progress.js';
+import { getCellCoordinatesAtPoint } from './pointer-input.js';
+import { getKeyboardCellTarget } from './keyboard-input.js';
+import { createSafeStorage } from './storage.js';
+import { calculateBoardLayout } from './layout.js';
 
 const $ = (id) => document.getElementById(id);
-const repo = createProgressRepository(window.localStorage);
-let progress = repo.load();
-let puzzle = null;
-let board = null;
-let activeTool = TOOL.FILL;
-let pointerStroke = false;
-let strokePointerId = null;
-let solved = false;
-const homeView = $('homeView'), gameView = $('gameView'), grid = $('puzzleGrid');
+const storage = createSafeStorage(window);
+const repository = createGameRepository(storage);
+let gameState = repository.load();
+let activeMode = gameState.currentMode;
+let progress = gameState.profiles[activeMode];
+let puzzle, board, activeTool = TOOL.FILL, pointerDown = false, activePointerId = null, completed = false;
+let lastHint = null, storageWarning = false, focusedCell = { row: 0, col: 0 }, advanceTimer = null;
 
+function seedFor(level, mode = activeMode, legacy = false) {
+  if (legacy && mode === 'easy') return (0x51f15e + Math.imul(level, 0x9e3779b1)) >>> 0;
+  const salt = mode === 'normal' ? 0x2468ace0 : mode === 'hard' ? 0x10293847 : 0x13579bdf;
+  return (0x51f15e ^ salt ^ Math.imul(level, 0x9e3779b1)) >>> 0;
+}
+function newBoardFor(level) {
+  const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
+  const seed = seedFor(level, activeMode, legacy);
+  const options = { level, seed, avoidFingerprints: progress.recentFingerprints };
+  const generated = legacy ? generateLegacyEasyPuzzle(options) : generatePuzzle({ ...options, difficulty: activeMode });
+  const model = new PuzzleBoard(generated.height, generated.width);
+  return { generated, model };
+}
+function loadLevel(level) {
+  if (advanceTimer !== null) { clearTimeout(advanceTimer); advanceTimer = null; }
+  const made = newBoardFor(level);
+  puzzle = made.generated; board = made.model; completed = false; lastHint = null; focusedCell = { row: 0, col: 0 };
+  const savedPuzzle = getSavedPuzzle(progress, level);
+  const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
+  if (savedPuzzle && savedPuzzle.seed === seedFor(level, activeMode, legacy) &&
+      savedPuzzle.width === puzzle.width && savedPuzzle.height === puzzle.height) {
+    savedPuzzle.board.forEach((row, r) => row.forEach((state, c) => { board.cells[r][c] = state; }));
+  }
+  progress = setCurrentPuzzle(progress, { level, seed: seedFor(level, activeMode, legacy), width: puzzle.width, height: puzzle.height }, board.snapshot());
+  save(); render();
+}
+function persist() {
+  try {
+    gameState = updateModeProgress(selectGameMode(gameState, activeMode), activeMode, progress);
+    gameState = repository.save(gameState);
+    storageWarning = false; return true;
+  }
+  catch (error) { console.warn('Nonogram progress could not be saved:', error); storageWarning = true; return false; }
+}
 function save() {
-  if (puzzle && board) {
-    progress = setCurrentPuzzle(progress, { level: puzzle.level, seed: puzzle.seed, width: puzzle.width, height: puzzle.height }, board.snapshot());
-  }
-  progress = repo.save(progress);
-  updateHome();
+  const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
+  progress = setCurrentPuzzle(progress, { level: puzzle.level, seed: seedFor(puzzle.level, activeMode, legacy), width: puzzle.width, height: puzzle.height }, board.snapshot());
+  persist();
 }
-function updateHome() {
-  $('homeLevel').textContent = `Level ${progress.currentLevel}`;
-  $('homeProgress').textContent = progress.completedLevels.length ? `${progress.completedLevels.length} completed. Your next puzzle is ready.` : 'A fresh page awaits.';
-  $('completedCount').textContent = `${progress.completedLevels.length} puzzles completed`;
-}
-function showHome() { homeView.hidden = false; gameView.hidden = true; updateHome(); }
-function startLevel(level = progress.currentLevel) {
-  const seed = (Math.imul(level, 2654435761) ^ 0x51f15e) >>> 0;
-  puzzle = generateEasyPuzzle({ level, seed });
-  puzzle.seed = seed;
-  board = new PuzzleBoard(puzzle.height, puzzle.width);
-  const saved = progress.currentPuzzle;
-  if (saved && saved.level === level && saved.seed === seed && saved.width === puzzle.width && saved.height === puzzle.height) {
-    saved.board.forEach((row, r) => row.forEach((state, c) => {
-      if (state !== CELL.UNKNOWN) board.applyCell(r, c, state === CELL.FILLED ? TOOL.FILL : TOOL.CROSS);
-    }));
-  }
-  solved = false;
-  $('levelTitle').textContent = `Puzzle ${String(level).padStart(2,'0')}`;
-  $('levelSize').textContent = `${puzzle.width} × ${puzzle.height}`;
-  homeView.hidden = true; gameView.hidden = false;
-  renderBoard(); save();
-}
-function renderBoard() {
-  const h = puzzle.height, w = puzzle.width;
-  grid.style.setProperty('--cols', w); grid.style.setProperty('--rows', h);
-  grid.style.gridTemplateColumns = `repeat(${w}, minmax(0,1fr))`;
-  grid.style.gridTemplateRows = `repeat(${h}, minmax(0,1fr))`;
-  $('rowClues').style.setProperty('--rows', h); $('columnClues').style.setProperty('--cols', w);
-  $('rowClues').innerHTML = puzzle.clues.rows.map((clue, r) => `<div class="row-clue" data-row="${r}">${clue.map(n=>`<span>${n}</span>`).join('')}</div>`).join('');
-  $('columnClues').innerHTML = puzzle.clues.columns.map((clue, c) => `<div class="column-clue" data-col="${c}">${clue.map(n=>`<span>${n}</span>`).join('')}</div>`).join('');
-  grid.innerHTML = '';
-  for (let r=0;r<h;r++) for (let c=0;c<w;c++) {
-    const cell = document.createElement('button'); cell.type='button'; cell.className='cell'; cell.dataset.row=r; cell.dataset.col=c; if(c===w-1) cell.classList.add('last-col'); if(r===h-1) cell.classList.add('last-row');
-    cell.setAttribute('role','gridcell'); cell.setAttribute('aria-label',`Row ${r+1}, column ${c+1}`); grid.append(cell);
-  }
-  refreshCells();
-}
-function refreshCells() {
-  if (!board) return;
-  const complete = getCompletedLines(board, puzzle.solution);
-  grid.querySelectorAll('.cell').forEach(el => {
-    const r=Number(el.dataset.row), c=Number(el.dataset.col), state=board.getState(r,c);
-    el.classList.toggle('filled',state===CELL.FILLED); el.classList.toggle('crossed',state===CELL.CROSSED);
-    el.setAttribute('aria-label',`Row ${r+1}, column ${c+1}, ${state}`);
+function make(tag, cls, text) { const node = document.createElement(tag); if (cls) node.className = cls; if (text !== undefined) node.textContent = text; return node; }
+function render() {
+  $('levelNumber').textContent = puzzle.level;
+  $('pointsBalance').textContent = progress.points;
+  document.querySelectorAll('[data-difficulty]').forEach(btn => {
+    const selected = btn.dataset.difficulty === activeMode;
+    btn.classList.toggle('active', selected);
+    btn.setAttribute('aria-pressed', String(selected));
   });
-  $('rowClues').querySelectorAll('.row-clue').forEach(el=>el.classList.toggle('complete',complete.rows.includes(Number(el.dataset.row))));
-  $('columnClues').querySelectorAll('.column-clue').forEach(el=>el.classList.toggle('complete',complete.columns.includes(Number(el.dataset.col))));
-  const marked=board.snapshot().flat().filter(x=>x!==CELL.UNKNOWN).length;
-  $('progressLabel').textContent=`${Math.round(marked/(puzzle.width*puzzle.height)*100)}% marked`;
-  $('undoBtn').disabled=!board.canUndo();
-  if (isBoardComplete(board,puzzle.solution)) finishPuzzle();
-}
-function paintFromTarget(target) {
-  const cell=target.closest('.cell'); if(!cell || !grid.contains(cell)) return;
-  board.paintCell(Number(cell.dataset.row),Number(cell.dataset.col));
-  refreshCells();
-}
-function finishPuzzle() {
-  if(solved) return; solved=true;
-  progress=completeLevel(progress,puzzle.level); progress=repo.save(progress);
-  $('statusText').textContent='Pattern complete. Nicely done.';
-  $('dialogEyebrow').textContent='PUZZLE COMPLETE'; $('dialogTitle').textContent='A pattern found.';
-  $('dialogBody').textContent='You made every little square count. Your next puzzle is ready whenever you are.';
-  $('dialogActions').innerHTML='<button id="nextPuzzleBtn">Next puzzle ↗</button>';
-  $('nextPuzzleBtn').addEventListener('click',()=>{ $('messageDialog').close(); startLevel(progress.currentLevel); });
-  $('messageDialog').showModal(); updateHome();
-}
-function setTool(tool) {
-  activeTool=tool;
-  document.querySelectorAll('.tool-choice').forEach(el=>{const selected=el.dataset.tool===tool;el.classList.toggle('selected',selected);el.setAttribute('aria-pressed',String(selected));});
+  const root = $('board'); root.replaceChildren(); root.style.setProperty('--n', puzzle.width);
+  const maxRowClueChars = Math.max(1, ...puzzle.clues.rows.map(clue => clue.filter(n => n !== 0).map(String).join(' ').length));
+  const maxColumnClues = Math.max(1, ...puzzle.clues.columns.map(clue => clue[0] === 0 ? 1 : clue.length));
+  root.dataset.maxRowClueChars = String(maxRowClueChars);
+  root.dataset.maxColumnClues = String(maxColumnClues);
+  const corner = make('div', 'corner'); root.append(corner);
+  const columnClues = make('div', 'column-clues'); columnClues.style.setProperty('--n', puzzle.width);
+  const rowClues = make('div', 'row-clues'); rowClues.style.setProperty('--n', puzzle.height);
+  const cells = make('div', 'cells'); cells.style.setProperty('--n', puzzle.width);
+  const doneLines = getCompletedLines(board, puzzle.solution);
+  puzzle.clues.columns.forEach((clue, c) => {
+    const done = doneLines.columns.includes(c);
+    const el = make('div', `clue column-clue${done ? ' done' : ''}`);
+    el.id = `column-clue-${c}`; el.setAttribute('role', 'group');
+    el.setAttribute('aria-label', `Column ${c + 1} clue: ${clue[0] === 0 ? 'no filled cells' : clue.join(', ')}${done ? ', complete' : ''}`);
+    clue.filter(n => n !== 0).forEach(n => el.append(make('span', '', String(n)))); columnClues.append(el);
+  });
+  puzzle.clues.rows.forEach((clue, r) => {
+    const done = doneLines.rows.includes(r);
+    const el = make('div', `clue row-clue${done ? ' done' : ''}`);
+    el.id = `row-clue-${r}`; el.setAttribute('role', 'group');
+    el.setAttribute('aria-label', `Row ${r + 1} clue: ${clue[0] === 0 ? 'no filled cells' : clue.join(', ')}${done ? ', complete' : ''}`);
+    clue.filter(n => n !== 0).forEach(n => el.append(make('span', '', String(n)))); rowClues.append(el);
+  });
+  for (let r=0;r<puzzle.height;r++) for(let c=0;c<puzzle.width;c++) {
+    const state = board.getState(r,c); const cell = make('button', `cell${state===CELL.FILLED?' filled':state===CELL.CROSSED?' crossed':''}`);
+    cell.type='button'; cell.dataset.row=r; cell.dataset.col=c;
+    cell.setAttribute('aria-label', `Row ${r+1}, column ${c+1}, ${state}`);
+    cell.setAttribute('aria-describedby', `row-clue-${r} column-clue-${c}`);
+    cell.tabIndex = r === focusedCell.row && c === focusedCell.col ? 0 : -1;
+    if(lastHint && lastHint.row===r && lastHint.col===c) cell.classList.add('hinted');
+    cell.addEventListener('pointerdown', onCellDown);
+    cell.addEventListener('keydown', event => {
+      const next = getKeyboardCellTarget(r, c, event.key, puzzle.height, puzzle.width);
+      if (!next) return;
+      event.preventDefault(); focusedCell = next;
+      const nextCell = root.querySelector(`[data-row="${next.row}"][data-col="${next.col}"]`);
+      root.querySelectorAll('.cell[tabindex="0"]').forEach(node => { node.tabIndex = -1; });
+      if (nextCell) { nextCell.tabIndex = 0; nextCell.focus(); }
+    });
+    cell.addEventListener('click', event => {
+      // Native keyboard activation produces click without a preceding pointerdown.
+      if (event.detail !== 0 || completed) return;
+      board.applyCell(r, c, activeTool);
+      refreshCell(r, c); refreshLineMarks(); save(); checkComplete();
+    });
+    cells.append(cell);
+  }
+  root.append(columnClues,rowClues,cells);
+  updateBoardMetrics();
+  $('undoButton').disabled = !board.canUndo();
+  $('hintButton').disabled = !hasHintCandidate();
+  $('feedback').textContent = (completed ? `Level ${puzzle.level} cleared · Next puzzle loading…` : `Level ${puzzle.level} · ${doneLines.rows.length}/${puzzle.height} rows · ${doneLines.columns.length}/${puzzle.width} columns`) + ` · ${progress.points} points` + (storageWarning ? ' · Save unavailable' : '');
+  document.querySelectorAll('[data-tool]').forEach(btn => {
+    const selected=btn.dataset.tool===activeTool; btn.classList.toggle('active',selected); btn.setAttribute('aria-pressed',String(selected));
+  });
 }
 
-grid.addEventListener('pointerdown',e=>{
-  const cell=e.target.closest('.cell'); if(!cell||solved) return;
-  e.preventDefault(); pointerStroke=true; strokePointerId=e.pointerId; grid.setPointerCapture(e.pointerId);
-  board.beginStroke(activeTool); paintFromTarget(cell);
+// Fit the complete clue + cell grid into the space actually available. The
+// cell tracks remain square on narrow phones, tablets, desktop and landscape.
+function updateBoardMetrics() {
+  if (!puzzle) return;
+  const wrap = $('boardWrap');
+  const root = $('board');
+  const width = wrap.clientWidth;
+  const height = wrap.clientHeight;
+  if (!width || !height) return;
+
+  const layout = calculateBoardLayout({
+    width,
+    height,
+    size: puzzle.width,
+    maxRowClueChars: Number(root.dataset.maxRowClueChars || 1),
+    maxColumnClues: Number(root.dataset.maxColumnClues || 1)
+  });
+  root.style.setProperty('--row-clue-width', `${layout.rowClueWidth}px`);
+  root.style.setProperty('--column-clue-height', `${layout.columnClueHeight}px`);
+  root.style.setProperty('--cell-size', `${layout.cellSize}px`);
+  root.style.setProperty('--clue-font-size', `${layout.clueFontSize}px`);
+}
+
+function refreshCell(row, col) {
+  const cell = $('board').querySelector(`[data-row="${row}"][data-col="${col}"]`);
+  if (!cell) return;
+  const state = board.getState(row, col);
+  cell.classList.toggle('filled', state === CELL.FILLED);
+  cell.classList.toggle('crossed', state === CELL.CROSSED);
+  cell.setAttribute('aria-label', `Row ${row+1}, column ${col+1}, ${state}`);
+}
+function refreshLineMarks() {
+  const done = getCompletedLines(board, puzzle.solution);
+  $('board').querySelectorAll('.row-clue').forEach((node, i) => {
+    const isDone = done.rows.includes(i);
+    node.classList.toggle('done', isDone);
+    const clue = puzzle.clues.rows[i];
+    node.setAttribute('aria-label', `Row ${i + 1} clue: ${clue[0] === 0 ? 'no filled cells' : clue.join(', ')}${isDone ? ', complete' : ''}`);
+  });
+  $('board').querySelectorAll('.column-clue').forEach((node, i) => {
+    const isDone = done.columns.includes(i);
+    node.classList.toggle('done', isDone);
+    const clue = puzzle.clues.columns[i];
+    node.setAttribute('aria-label', `Column ${i + 1} clue: ${clue[0] === 0 ? 'no filled cells' : clue.join(', ')}${isDone ? ', complete' : ''}`);
+  });
+  $('feedback').textContent = `${done.rows.length} / ${puzzle.height} rows · ${done.columns.length} / ${puzzle.width} columns · ${progress.points} points` + (storageWarning ? ' · Progress could not be saved' : '');
+  $('undoButton').disabled = !board.canUndo();
+  $('hintButton').disabled = !hasHintCandidate();
+}
+function paintCellAt(row, col) {
+  if (board.paintCell(row, col)) {
+    refreshCell(row, col);
+    refreshLineMarks();
+  }
+}
+function onCellDown(event) {
+  if (completed || event.button !== 0 || event.isPrimary === false) return;
+  event.preventDefault();
+  if (pointerDown) finishStroke();
+  pointerDown = true;
+  activePointerId = event.pointerId ?? null;
+  board.beginStroke(activeTool);
+  const cell = event.target.closest?.('.cell');
+  if (cell) {
+    focusedCell = { row: Number(cell.dataset.row), col: Number(cell.dataset.col) };
+    $('board').querySelectorAll('.cell[tabindex="0"]').forEach(node => { node.tabIndex = -1; });
+    cell.tabIndex = 0;
+    paintCellAt(focusedCell.row, focusedCell.col);
+  }
+}
+function onPointerMove(event) {
+  if (!pointerDown || completed || (activePointerId !== null && event.pointerId !== activePointerId)) return;
+  event.preventDefault();
+  const coordinate = getCellCoordinatesAtPoint(document, event.clientX, event.clientY);
+  if (coordinate) paintCellAt(coordinate.row, coordinate.col);
+}
+function finishStroke(event) {
+  if (!pointerDown || (event?.pointerId != null && activePointerId !== null && event.pointerId !== activePointerId)) return;
+  pointerDown = false;
+  activePointerId = null;
+  board.endStroke();
+  save();
+  render();
+  checkComplete();
+}
+if ('ResizeObserver' in window) {
+  const boardResizeObserver = new ResizeObserver(updateBoardMetrics);
+  boardResizeObserver.observe($('boardWrap'));
+} else {
+  window.addEventListener('resize', updateBoardMetrics, { passive: true });
+}
+window.addEventListener('orientationchange', () => requestAnimationFrame(updateBoardMetrics), { passive: true });
+
+window.addEventListener('pointermove', onPointerMove, { passive: false });
+window.addEventListener('pointerup', finishStroke);
+window.addEventListener('pointercancel', finishStroke);
+window.addEventListener('blur', () => { if (pointerDown) finishStroke(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && pointerDown) finishStroke(); });
+window.addEventListener('keydown', event => {
+  const target = event.target;
+  const isEditable = target instanceof HTMLElement && (target.isContentEditable ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+  if (isEditable || document.querySelector('dialog[open]') || completed ||
+      !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') return;
+  event.preventDefault();
+  if (board.undo()) {
+    save(); render();
+    $('board').querySelector(`[data-row="${focusedCell.row}"][data-col="${focusedCell.col}"]`)?.focus();
+  }
 });
-grid.addEventListener('pointerover',e=>{if(pointerStroke && e.pointerType==='mouse') paintFromTarget(e.target);});
-grid.addEventListener('pointermove',e=>{if(!pointerStroke || e.pointerId!==strokePointerId) return; const el=document.elementFromPoint(e.clientX,e.clientY); paintFromTarget(el);});
-function endStroke(){if(!pointerStroke)return;pointerStroke=false;strokePointerId=null;board.endStroke();refreshCells();save();}
-grid.addEventListener('pointerup',endStroke);grid.addEventListener('pointercancel',endStroke);grid.addEventListener('lostpointercapture',endStroke);
-document.querySelectorAll('.tool-choice').forEach(el=>el.addEventListener('click',()=>setTool(el.dataset.tool)));
-$('undoBtn').addEventListener('click',()=>{if(board?.undo()){refreshCells();save();$('statusText').textContent='Last move undone.';}});
-$('eraseBtn').addEventListener('click',()=>setTool(TOOL.ERASE));
-$('resetBtn').addEventListener('click',()=>{if(!board)return;board.reset();solved=false;refreshCells();save();$('statusText').textContent='Board cleared. Start fresh.';});
-$('hintBtn').addEventListener('click',()=>{if(!board||solved)return;let target=null;for(let r=0;r<puzzle.height&&!target;r++)for(let c=0;c<puzzle.width;c++){if(board.getState(r,c)===CELL.UNKNOWN&&puzzle.solution[r][c]){target=[r,c];break;}}if(!target){$('statusText').textContent='No unmarked filled squares remain to reveal.';return;}board.applyCell(target[0],target[1],TOOL.FILL);refreshCells();save();$('statusText').textContent='A correct square revealed. You can undo it too.';});
-$('playBtn').addEventListener('click',()=>startLevel(progress.currentLevel));
-$('backBtn').addEventListener('click',()=>{save();showHome();});
-$('helpBtn').addEventListener('click',()=>{ $('dialogEyebrow').textContent='THE BASICS';$('dialogTitle').textContent='Read. Mark. Discover.';$('dialogBody').textContent='Numbers tell you how many filled squares appear in each row or column, in consecutive groups. Choose Fill for a filled square, Cross to mark an empty one, or Erase to clear a mark. Drag across cells to make a single stroke. Undo reverses your last stroke.';$('dialogActions').innerHTML='<button data-close>Got it</button>';$('messageDialog').showModal();});
-$('settingsBtn').addEventListener('click',()=>{ $('dialogEyebrow').textContent='YOUR SPACE';$('dialogTitle').textContent='A calm little corner.';$('dialogBody').textContent='Your progress is saved locally on this device. No account, points, ads or noisy extras.';$('dialogActions').innerHTML='<button id="clearProgressBtn">Reset all progress</button><button data-close>Close</button>';$('clearProgressBtn').addEventListener('click',()=>{progress=repo.save(createInitialProgress());puzzle=null;board=null;$('messageDialog').close();showHome();});$('messageDialog').showModal();});
-document.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',()=>el.closest('dialog').close()));
-$('messageDialog').addEventListener('click',e=>{if(e.target===$('messageDialog'))$('messageDialog').close();});
-updateHome();
+function checkComplete() {
+  if (completed || !isBoardComplete(board, puzzle.solution)) return;
+  completed = true;
+  const finishedLevel = puzzle.level;
+  progress = completeLevel(progress, finishedLevel, puzzle.fingerprint, puzzle.points);
+  persist();
+  $('feedback').textContent = `✦ Level ${finishedLevel} cleared! Next one…` + ` · ${progress.points} points` + (storageWarning ? ' · Save unavailable' : '');
+  $('board').classList.add('board-complete');
+  // The next puzzle starts automatically. Progress is committed first, so a
+  // refresh during this short celebration resumes at the next level.
+  advanceTimer = setTimeout(() => {
+    advanceTimer = null;
+    loadLevel(progress.currentLevel);
+  }, 560);
+}
+function hasHintCandidate() { return puzzle.solution.some((row,r)=>row.some((v,c)=>v && board.getState(r,c)!==CELL.FILLED)); }
+function switchDifficulty(nextMode) {
+  if (!GAME_MODES.includes(nextMode) || nextMode === activeMode) return;
+  if (pointerDown) finishStroke();
+  if (advanceTimer !== null) { clearTimeout(advanceTimer); advanceTimer = null; }
+  persist();
+  gameState = selectGameMode(gameState, nextMode);
+  activeMode = nextMode;
+  progress = gameState.profiles[activeMode];
+  activeTool = TOOL.FILL;
+  pointerDown = false; activePointerId = null; completed = false; lastHint = null;
+  loadLevel(progress.currentLevel || 1);
+}
+document.querySelectorAll('[data-difficulty]').forEach(btn => btn.addEventListener('click', () => switchDifficulty(btn.dataset.difficulty)));
+
+document.querySelectorAll('[data-tool]').forEach(btn=>btn.addEventListener('click',()=>{activeTool=btn.dataset.tool;render();}));
+$('undoButton').addEventListener('click',()=>{if(board.undo()){save();render();}});
+$('hintButton').addEventListener('click',()=>{
+  const purchase = spendHintPoints(progress);
+  if (!purchase.success) { $('feedback').textContent = `Need ${HINT_COST} points for a hint · You have ${progress.points}`; return; }
+  const revealed = board.giveHint(puzzle.solution);
+  if (revealed) { progress = purchase.progress; lastHint = revealed; save(); render(); checkComplete(); }
+});
+try { loadLevel(progress.currentLevel || 1); }
+catch(error) { console.error(error); $('feedback').textContent='Could not create this puzzle. Reload to try again.'; }
+
+
+// GitHub Pages is served over HTTPS, so the app can install its offline shell.
+// Service-worker failure must never block normal gameplay.
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .catch(error => console.warn('Nonogram offline support could not be registered:', error));
+  }, { once: true });
+}
