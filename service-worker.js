@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prasannaone-nonogram-shell-v13';
+const CACHE_NAME = 'prasannaone-nonogram-shell-v14';
 const APP_BASE = new URL('./', self.location.href);
 const APP_SHELL = [
   './',
