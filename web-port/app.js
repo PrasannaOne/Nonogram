@@ -15,6 +15,11 @@ let activeMode = gameState.currentMode;
 let progress = gameState.profiles[activeMode];
 let puzzle, board, activeTool = TOOL.FILL, pointerDown = false, activePointerId = null, completed = false;
 let lastHint = null, storageWarning = false, focusedCell = { row: 0, col: 0 }, advanceTimer = null;
+const THEME_KEY = 'prasannaone.nonogram.theme.v1';
+const THEMES = Object.freeze({
+  lavender: '#f7f4fb', ocean: '#f0f8fc', rose: '#fff4f6',
+  forest: '#f1f7f1', midnight: '#171a27', amoled: '#000000'
+});
 
 function seedFor(level, mode = activeMode, legacy = false) {
   if (legacy && mode === 'easy') return (0x51f15e + Math.imul(level, 0x9e3779b1)) >>> 0;
@@ -56,8 +61,36 @@ function save() {
   persist();
 }
 function make(tag, cls, text) { const node = document.createElement(tag); if (cls) node.className = cls; if (text !== undefined) node.textContent = text; return node; }
+function readThemePreference() {
+  try { const saved = storage.getItem(THEME_KEY); return Object.hasOwn(THEMES, saved) ? saved : 'lavender'; }
+  catch { return 'lavender'; }
+}
+function applyTheme(theme, persistChoice = false) {
+  if (!Object.hasOwn(THEMES, theme)) theme = 'lavender';
+  document.documentElement.dataset.theme = theme;
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.content = THEMES[theme];
+  document.querySelectorAll('[data-theme-choice]').forEach(button => {
+    const selected = button.dataset.themeChoice === theme;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  if (persistChoice) { try { storage.setItem(THEME_KEY, theme); } catch (error) { console.warn('Theme preference could not be saved:', error); } }
+}
+function openDialog(dialog) {
+  if (!dialog) return;
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+}
+function closeDialog(dialog) {
+  if (!dialog) return;
+  if (typeof dialog.close === 'function') dialog.close();
+  else dialog.removeAttribute('open');
+}
 function render() {
   $('levelNumber').textContent = puzzle.level;
+  $('modeLabel').textContent = activeMode.charAt(0).toUpperCase() + activeMode.slice(1);
+  $('levelSize').textContent = `${puzzle.width} × ${puzzle.height}`;
   $('pointsBalance').textContent = progress.points;
   document.querySelectorAll('[data-difficulty]').forEach(btn => {
     const selected = btn.dataset.difficulty === activeMode;
@@ -260,7 +293,45 @@ function switchDifficulty(nextMode) {
   pointerDown = false; activePointerId = null; completed = false; lastHint = null;
   loadLevel(progress.currentLevel || 1);
 }
-document.querySelectorAll('[data-difficulty]').forEach(btn => btn.addEventListener('click', () => switchDifficulty(btn.dataset.difficulty)));
+document.querySelectorAll('[data-difficulty]').forEach(btn => btn.addEventListener('click', () => {
+  switchDifficulty(btn.dataset.difficulty);
+  closeDialog($('settingsDialog'));
+}));
+
+applyTheme(readThemePreference());
+document.querySelectorAll('[data-theme-choice]').forEach(button => {
+  button.addEventListener('click', () => applyTheme(button.dataset.themeChoice, true));
+});
+$('settingsButton').addEventListener('click', () => openDialog($('settingsDialog')));
+$('aboutButton').addEventListener('click', () => {
+  closeDialog($('settingsDialog'));
+  openDialog($('aboutDialog'));
+});
+document.querySelectorAll('[data-close-dialog]').forEach(button => {
+  button.addEventListener('click', () => closeDialog($(button.dataset.closeDialog)));
+});
+document.querySelectorAll('dialog').forEach(dialog => {
+  dialog.addEventListener('click', event => { if (event.target === dialog) closeDialog(dialog); });
+});
+async function shareGame() {
+  const shareData = {
+    title: 'Nonogram · PrasannaOne',
+    text: 'A little logic, one square at a time. Play Nonogram.',
+    url: window.location.href
+  };
+  if (typeof navigator.share === 'function') {
+    try { await navigator.share(shareData); return; }
+    catch (error) { if (error?.name === 'AbortError') return; }
+  }
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(shareData.url);
+    $('feedback').textContent = 'Game link copied. Share the puzzle with a friend!';
+  } catch {
+    window.prompt('Copy this link to share the game:', shareData.url);
+  }
+}
+$('shareButton').addEventListener('click', shareGame);
 
 document.querySelectorAll('[data-tool]').forEach(btn=>btn.addEventListener('click',()=>{activeTool=btn.dataset.tool;render();}));
 $('undoButton').addEventListener('click',()=>{if(board.undo()){save();render();}});
