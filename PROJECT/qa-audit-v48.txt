@@ -1,2 +1,0 @@
-Static audit passed.
-18 unique HTML ids; 14 direct app id references; 19 named HTML buttons; 8 JS modules checked.

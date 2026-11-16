@@ -1,1 +1,0 @@
-Static audit passed; see QA_v45.txt.

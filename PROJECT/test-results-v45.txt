@@ -1,1 +1,0 @@
-84 tests passed, 0 failed. See QA_v45.txt for stress suite results.

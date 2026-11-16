@@ -1,1 +1,0 @@
-npm test: 95 passed, 0 failed.

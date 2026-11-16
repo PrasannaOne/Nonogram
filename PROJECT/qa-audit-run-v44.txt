@@ -1,5 +1,0 @@
-
-> audit
-> node scripts/audit.mjs
-
-Static audit passed: 18 unique HTML ids; 14 direct app id references; 18 named HTML buttons; 8 JS modules checked.
