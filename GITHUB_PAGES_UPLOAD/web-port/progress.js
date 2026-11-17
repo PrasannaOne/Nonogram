@@ -19,6 +19,7 @@ export function createInitialProgress() {
     schemaVersion: 4,
     mode: 'easy',
     generatorVersion: 2,
+    journeySeed: null, // Random per-player, persistent across reloads and progress backups.
     currentLevel: 1,
     highestUnlockedLevel: 1,
     completedThrough: 0,
@@ -38,10 +39,11 @@ const VALID_CELL_STATES = new Set(['unknown', 'filled', 'crossed']);
 function normalizePuzzleSnapshot(snapshot, highestUnlockedLevel) {
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return null;
   const { level, seed, width, height, board } = snapshot;
-  if (!isValidLevel(level) || level > highestUnlockedLevel ||
+  const validSeed = Number.isSafeInteger(seed) || (typeof seed === 'string' && seed.length >= 8 && seed.length <= 180 && /^[a-zA-Z0-9:_-]+$/.test(seed));
+  if (!isValidLevel(level) || level > highestUnlockedLevel || !validSeed ||
       !Number.isInteger(width) || width < 1 || width > MAX_GRID_SIZE ||
       !Number.isInteger(height) || height < 1 || height > MAX_GRID_SIZE ||
-      !Number.isSafeInteger(seed) || !Array.isArray(board) || board.length !== height) return null;
+      !Array.isArray(board) || board.length !== height) return null;
   if (!board.every(row => Array.isArray(row) && row.length === width &&
       row.every(cell => VALID_CELL_STATES.has(cell)))) return null;
   const hintedCells = Array.isArray(snapshot.hintedCells)
@@ -52,7 +54,11 @@ function normalizePuzzleSnapshot(snapshot, highestUnlockedLevel) {
     : [];
   const startedAtMs = Number.isSafeInteger(snapshot.startedAtMs) && snapshot.startedAtMs > 0
     ? snapshot.startedAtMs : null;
-  return { level, seed: seed >>> 0, width, height, board: board.map(row => row.slice()), hintedCells, startedAtMs };
+  const attempts = Number.isSafeInteger(snapshot.attempts) && snapshot.attempts >= 1 && snapshot.attempts <= 10000
+    ? snapshot.attempts : null;
+  const fingerprint = typeof snapshot.fingerprint === 'string' && /^[a-f0-9]{16}$/i.test(snapshot.fingerprint)
+    ? snapshot.fingerprint.toLowerCase() : null;
+  return { level, seed: typeof seed === 'number' ? seed >>> 0 : seed, width, height, board: board.map(row => row.slice()), hintedCells, startedAtMs, attempts, fingerprint, legacy: typeof snapshot.legacy === 'boolean' ? snapshot.legacy : null };
 }
 
 export function normalizeProgress(input) {
@@ -96,6 +102,7 @@ export function normalizeProgress(input) {
     schemaVersion: 4,
     mode: input.mode === 'normal' || input.mode === 'hard' ? input.mode : 'easy',
     generatorVersion: input.generatorVersion === 1 ? 1 : 2,
+    journeySeed: typeof input.journeySeed === 'string' && /^[a-f0-9]{32}$/i.test(input.journeySeed) ? input.journeySeed.toLowerCase() : null,
     currentLevel,
     highestUnlockedLevel,
     completedThrough,
@@ -186,7 +193,10 @@ export function setCurrentPuzzle(progress, puzzle, board) {
   if (!puzzle || !isValidLevel(puzzle.level) || puzzle.level > state.highestUnlockedLevel ||
       !Number.isInteger(puzzle.width) || puzzle.width < 1 || puzzle.width > MAX_GRID_SIZE ||
       !Number.isInteger(puzzle.height) || puzzle.height < 1 || puzzle.height > MAX_GRID_SIZE ||
-      !Number.isSafeInteger(puzzle.seed) || !Array.isArray(board) || board.length !== puzzle.height ||
+      !(Number.isSafeInteger(puzzle.seed) || (typeof puzzle.seed === 'string' && puzzle.seed.length >= 8 && puzzle.seed.length <= 180 && /^[a-zA-Z0-9:_-]+$/.test(puzzle.seed))) ||
+      (puzzle.attempts !== undefined && (!Number.isSafeInteger(puzzle.attempts) || puzzle.attempts < 1 || puzzle.attempts > 10000)) ||
+      (puzzle.fingerprint !== undefined && (typeof puzzle.fingerprint !== 'string' || !/^[a-f0-9]{16}$/i.test(puzzle.fingerprint))) ||
+      (puzzle.legacy !== undefined && typeof puzzle.legacy !== 'boolean') || !Array.isArray(board) || board.length !== puzzle.height ||
       !board.every(row => Array.isArray(row) && row.length === puzzle.width && row.every(cell => VALID_CELL_STATES.has(cell)))) {
     throw new TypeError('Puzzle must reference an unlocked level and include a valid board snapshot.');
   }

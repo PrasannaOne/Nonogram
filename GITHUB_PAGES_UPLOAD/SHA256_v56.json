@@ -1,0 +1,86 @@
+{
+  "release": "v56",
+  "generated_utc": "2026-11-17",
+  "files": [
+    {
+      "path": ".nojekyll",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "icons/nonogram-192.png",
+      "bytes": 797,
+      "sha256": "921c1e257515bbc6ebe1d1f5e172d613de0866054f056419040d3003afa2be05"
+    },
+    {
+      "path": "icons/nonogram-512.png",
+      "bytes": 2280,
+      "sha256": "cd56769dd58a3057be83149a102b034eae3e68b274e7926ae87541c0c290fe3f"
+    },
+    {
+      "path": "index.html",
+      "bytes": 9614,
+      "sha256": "d9dc152b6df08620b4c9a8ac4b9332c140d2f065a66d0a6bf4ae5b7c0a6a44fd"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "bytes": 552,
+      "sha256": "9bd77444ce3b5001e7c2b1b7bae41c974fe6a454843c72033a893f85c3ce2974"
+    },
+    {
+      "path": "service-worker.js",
+      "bytes": 2959,
+      "sha256": "c713837ea494323c61911fbe857a842749c6109e8e0b02588de88bf6effe43f5"
+    },
+    {
+      "path": "web-port/app.js",
+      "bytes": 25680,
+      "sha256": "cb93249c137e48106dd75bb070fbca858dc706d1cf6360b1fa2bea4b17fd81bc"
+    },
+    {
+      "path": "web-port/completion.js",
+      "bytes": 925,
+      "sha256": "4cd595875108d2082b673c0c3c2d83154f5f785db7142cc7c03846ffad366aff"
+    },
+    {
+      "path": "web-port/interaction.js",
+      "bytes": 9323,
+      "sha256": "160ca8d97818951914c23fd4d4d9c52c3e3b080c835c8425f011d8e44b57aa97"
+    },
+    {
+      "path": "web-port/keyboard-input.js",
+      "bytes": 1001,
+      "sha256": "fb37511f58b9564572b7c334110c11226adf0122a66882c5a6f53b57d8eeef7c"
+    },
+    {
+      "path": "web-port/layout.js",
+      "bytes": 1546,
+      "sha256": "96bae9028f756184d2ab9356feab71e7cfb08bc82549716d1cffd395570d9548"
+    },
+    {
+      "path": "web-port/nonogram.js",
+      "bytes": 14024,
+      "sha256": "b139d7a0044ec3db0cb3706b6b1a404837e5cf4acc06404ef47b528d11ed0eb8"
+    },
+    {
+      "path": "web-port/pointer-input.js",
+      "bytes": 2156,
+      "sha256": "7a7b60c2c15d01e7a6617fb9b1e7a4487ef4dbdbc75613a02f5fe8270f9ada62"
+    },
+    {
+      "path": "web-port/progress.js",
+      "bytes": 16873,
+      "sha256": "f32ceac401f86ca91a568fd7e0054e71b9a258fb1511ffdc8273ef70208a7232"
+    },
+    {
+      "path": "web-port/storage.js",
+      "bytes": 737,
+      "sha256": "2ee2b6a753fdfb9e726bda7f76e3d04a492ccfae46135ccf564356dafae4c224"
+    },
+    {
+      "path": "web-port/styles.css",
+      "bytes": 26229,
+      "sha256": "ee731ddd1a8321dd2937eac3c69de28dd4ffb6db02a985f7b4ce882989af0f35"
+    }
+  ]
+}

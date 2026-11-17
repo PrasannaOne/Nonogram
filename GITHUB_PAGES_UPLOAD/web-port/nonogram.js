@@ -14,7 +14,50 @@ export const EASY_GRID_SIZES = DIFFICULTY_GRID_SIZES.easy; // Backwards-compatib
 export const LEGACY_EASY_GRID_SIZES = Object.freeze([5, 6, 7, 8, 9, 10]);
 export const EASY_LEVEL_BATCH_SIZE = 10;
 
+function cyrb128(text) {
+  let h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
+  for (let i = 0; i < text.length; i++) {
+    const k = text.charCodeAt(i);
+    h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
+    h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
+    h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
+    h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
+  }
+  h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
+  h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
+  h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
+  h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
+  return [(h1 ^ h2 ^ h3 ^ h4) >>> 0, (h2 ^ h1) >>> 0, (h3 ^ h1) >>> 0, (h4 ^ h1) >>> 0];
+}
+
+function sfc32(a, b, c, d) {
+  return () => {
+    a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0;
+    let t = (a + b) | 0;
+    a = b ^ (b >>> 9);
+    b = (c + (c << 3)) | 0;
+    c = (c << 21) | (c >>> 11);
+    d = (d + 1) | 0;
+    t = (t + d) | 0;
+    c = (c + t) | 0;
+    return (t >>> 0) / 4294967296;
+  };
+}
+
+function isValidSeed(seed) {
+  return Number.isSafeInteger(seed) ||
+    (typeof seed === 'string' && seed.length >= 8 && seed.length <= 180 && /^[a-zA-Z0-9:_-]+$/.test(seed));
+}
+
 export function createRng(seed = Date.now()) {
+  // New player journeys use namespaced 128-bit random IDs. String seeds feed a
+  // four-word PRNG so the whole player seed, not merely a 32-bit slice, matters.
+  if (typeof seed === 'string') {
+    if (!isValidSeed(seed)) throw new TypeError('String seed must be 8-180 safe characters.');
+    return sfc32(...cyrb128(seed));
+  }
+  if (!Number.isSafeInteger(seed)) throw new TypeError('Seed must be a safe integer or a valid string.');
+  // Preserve the established numeric PRNG stream for existing v1-v54 saves.
   let state = (Number(seed) >>> 0) || 0x6d2b79f5;
   return () => {
     state += 0x6D2B79F5;
@@ -52,70 +95,69 @@ export function validateSolution(solution) {
   return solution.every(row => Array.isArray(row) && row.length === width && row.every(v => typeof v === 'boolean'));
 }
 
-function matchesClues(line, clues) {
-  const actual = calculateLineClues(line);
-  return actual.length === clues.length && actual.every((n, i) => n === clues[i]);
-}
-
-function prefixCanMatch(linePrefix, targetClues) {
-  let clueIndex = 0;
-  let run = 0;
-  for (const bit of linePrefix) {
-    if (bit) {
-      if (clueIndex >= targetClues.length || targetClues[clueIndex] === 0) return false;
-      run++;
-      if (run > targetClues[clueIndex]) return false;
-    } else if (run) {
-      if (run !== targetClues[clueIndex]) return false;
-      clueIndex++;
-      run = 0;
+function lineMasks(length, clues) {
+  if (clues.length === 1 && clues[0] === 0) return [0];
+  const runs = clues;
+  const suffixCells = Array(runs.length + 1).fill(0);
+  for (let i = runs.length - 1; i >= 0; i--) suffixCells[i] = suffixCells[i + 1] + runs[i];
+  const out = [];
+  function place(index, earliest, mask) {
+    if (index === runs.length) { out.push(mask); return; }
+    const remainingRuns = runs.length - index;
+    const minimumTail = suffixCells[index] + remainingRuns - 1;
+    const latestStart = length - minimumTail;
+    for (let start = earliest; start <= latestStart; start++) {
+      const runMask = ((1 << runs[index]) - 1) << start;
+      place(index + 1, start + runs[index] + 1, mask | runMask);
     }
   }
-  return true;
-}
-
-function rowMasks(width, clues) {
-  const out = [];
-  const limit = 1 << width;
-  for (let mask = 0; mask < limit; mask++) {
-    const row = Array.from({ length: width }, (_, c) => Boolean(mask & (1 << c)));
-    if (matchesClues(row, clues)) out.push(row);
-  }
+  place(0, 0, 0);
   return out;
 }
 
-// Counts up to `limit`; useful for uniqueness validation on small/easy boards.
+// Counts up to `limit`. Line placements are generated directly from run clues,
+// and column-prefix possibilities are indexed once. This avoids scanning every
+// 2^width row mask and allocating temporary arrays at every recursion node.
 export function countSolutions(clues, height, width, limit = 2) {
-  const validClueLine = line => Array.isArray(line) && line.length > 0 &&
-    line.every(n => Number.isInteger(n) && n >= 0 && n <= width) &&
+  const validClueLine = (line, lineLength) => Array.isArray(line) && line.length > 0 &&
+    line.every(n => Number.isInteger(n) && n >= 0 && n <= lineLength) &&
     (line.length === 1 ? true : line.every(n => n > 0));
   if (!Number.isInteger(height) || height < 1 || height > 12 ||
       !Number.isInteger(width) || width < 1 || width > 12 ||
       !Number.isSafeInteger(limit) || limit < 1 ||
       !clues || !Array.isArray(clues.rows) || !Array.isArray(clues.columns) ||
       clues.rows.length !== height || clues.columns.length !== width ||
-      !clues.rows.every(validClueLine) || !clues.columns.every(validClueLine)) return 0;
-  const candidates = clues.rows.map(rowClue => rowMasks(width, rowClue));
-  if (candidates.some(rows => rows.length === 0)) return 0;
-  const chosen = [];
+      !clues.rows.every(line => validClueLine(line, width)) ||
+      !clues.columns.every(line => validClueLine(line, height))) return 0;
+
+  const rowCandidates = clues.rows.map(line => lineMasks(width, line));
+  if (rowCandidates.some(rows => rows.length === 0)) return 0;
+  const columnPrefixes = clues.columns.map(line => {
+    const masks = lineMasks(height, line);
+    if (!masks.length) return null;
+    return Array.from({ length: height + 1 }, (_, depth) => {
+      const prefixMask = (1 << depth) - 1;
+      return new Set(masks.map(mask => mask & prefixMask));
+    });
+  });
+  if (columnPrefixes.some(prefixes => prefixes === null)) return 0;
+
+  const activeColumnBits = Array(width).fill(0);
   let count = 0;
-  function visit(r) {
+  function visit(row) {
     if (count >= limit) return;
-    if (r === height) {
-      for (let c = 0; c < width; c++) {
-        if (!matchesClues(chosen.map(row => row[c]), clues.columns[c])) return;
+    if (row === height) { count++; return; }
+    const nextDepth = row + 1;
+    for (const candidate of rowCandidates[row]) {
+      for (let col = 0; col < width; col++) {
+        if (candidate & (1 << col)) activeColumnBits[col] |= 1 << row;
       }
-      count++;
-      return;
-    }
-    for (const candidate of candidates[r]) {
-      chosen.push(candidate);
       let valid = true;
-      for (let c = 0; c < width; c++) {
-        if (!prefixCanMatch(chosen.map(row => row[c]), clues.columns[c])) { valid = false; break; }
+      for (let col = 0; col < width; col++) {
+        if (!columnPrefixes[col][nextDepth].has(activeColumnBits[col])) { valid = false; break; }
       }
-      if (valid) visit(r + 1);
-      chosen.pop();
+      if (valid) visit(nextDepth);
+      for (let col = 0; col < width; col++) activeColumnBits[col] &= ~(1 << row);
       if (count >= limit) return;
     }
   }
@@ -142,14 +184,16 @@ export function puzzleFingerprint(solution) {
 }
 
 /** Deterministic size bag: each configured size appears once before a refill. */
-function makeSizeSchedule(level, sizes, modeSalt = 0) {
+function makeSizeSchedule(level, sizes, modeSalt = 0, journeySeed = null) {
   if (!Number.isSafeInteger(level) || level < 1 || level > 1_000_000) {
     throw new RangeError('Level must be a positive safe integer within the supported range.');
   }
   const batchIndex = Math.floor((level - 1) / EASY_LEVEL_BATCH_SIZE);
   const slot = (level - 1) % EASY_LEVEL_BATCH_SIZE;
   const batchSeed = (0x6a09e667 ^ modeSalt ^ Math.imul(batchIndex + 1, 0x9e3779b1)) >>> 0;
-  const rng = createRng(batchSeed);
+  const rng = typeof journeySeed === 'string'
+    ? createRng(`${journeySeed}:size-bag:${modeSalt}:${batchIndex}`)
+    : createRng(batchSeed);
   const schedule = [];
   while (schedule.length < EASY_LEVEL_BATCH_SIZE) {
     const bag = [...sizes];
@@ -164,9 +208,10 @@ function makeSizeSchedule(level, sizes, modeSalt = 0) {
 
 const MODE_SALTS = Object.freeze({ easy: 0x13579bdf, normal: 0x2468ace0, hard: 0x10293847 });
 
-export function getGridSizeForLevel(level, difficulty = 'easy') {
+export function getGridSizeForLevel(level, difficulty = 'easy', journeySeed = null) {
   if (!DIFFICULTIES.includes(difficulty)) throw new RangeError('Difficulty must be easy, normal, or hard.');
-  return makeSizeSchedule(level, DIFFICULTY_GRID_SIZES[difficulty], MODE_SALTS[difficulty]);
+  if (journeySeed !== null && !isValidSeed(journeySeed)) throw new TypeError('journeySeed must be a valid saved seed.');
+  return makeSizeSchedule(level, DIFFICULTY_GRID_SIZES[difficulty], MODE_SALTS[difficulty], journeySeed);
 }
 
 /** Reproduces the pre-v40 Easy schedule only to resume existing unfinished saves safely. */
@@ -191,17 +236,20 @@ function hasUsefulVariety(solution, minimumRunCount = 12) {
     rowPatterns.size >= 3 && columnPatterns.size >= 3 && runCount >= minimumRunCount;
 }
 
-function generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoidFingerprints, minimumRunCount = Math.min(12, size * 2) }) {
+function generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoidFingerprints, exactAttempt = null, minimumRunCount = Math.min(12, size * 2) }) {
   if (!Number.isSafeInteger(level) || level < 1 || level > 1_000_000) {
     throw new RangeError('Level must be a positive safe integer within the supported range.');
   }
-  if (!Number.isSafeInteger(seed)) throw new TypeError('Seed must be a safe integer.');
+  if (!isValidSeed(seed)) throw new TypeError('Seed must be a safe integer or a valid string.');
   if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 10_000) {
     throw new RangeError('maxAttempts must be an integer from 1 to 10000.');
   }
   if (!Number.isInteger(size) || size < 5 || size > 12) throw new RangeError('Grid size must be between 5 and 12.');
   if (!Array.isArray(avoidFingerprints) || avoidFingerprints.some(value => typeof value !== 'string')) {
     throw new TypeError('avoidFingerprints must be an array of strings.');
+  }
+  if (exactAttempt !== null && (!Number.isSafeInteger(exactAttempt) || exactAttempt < 0 || exactAttempt >= maxAttempts)) {
+    throw new RangeError('exactAttempt must be a zero-based attempt index within maxAttempts.');
   }
   const recent = new Set(avoidFingerprints);
   const rng = createRng(seed);
@@ -213,13 +261,17 @@ function generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoi
     const solution = Array.from({ length: size }, () =>
       Array.from({ length: size }, () => rng() < density)
     );
+    // Replay/resume pins the exact accepted PRNG attempt. Earlier attempts are
+    // still consumed so the stream is identical, but they are not candidates.
+    if (exactAttempt !== null && attempt !== exactAttempt) continue;
     if (!hasFilledLine(solution) || !hasUsefulVariety(solution, minimumRunCount)) continue;
     const fingerprint = puzzleFingerprint(solution);
     if (recent.has(fingerprint)) continue;
     const clues = calculateClues(solution);
     if (countSolutions(clues, size, size, 2) === 1) {
       return {
-        id: `${difficulty}-${level}-${Number(seed) >>> 0}-${attempt}`,
+        id: `${difficulty}-${level}-${typeof seed === 'string' ? seed : Number(seed) >>> 0}-${attempt}`,
+        seed,
         level,
         difficulty,
         width: size,
@@ -235,11 +287,16 @@ function generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoi
   throw new Error(`Could not generate a fresh unique ${difficulty} puzzle at ${size}x${size} after ${maxAttempts} attempts; try another seed or clear the recent-fingerprint window.`);
 }
 
-export function generatePuzzle({ difficulty = 'easy', level = 1, seed = Date.now(), maxAttempts = 500, avoidFingerprints = [] } = {}) {
+export function generatePuzzle({ difficulty = 'easy', level = 1, seed = Date.now(), journeySeed = null, size = null, maxAttempts = 500, avoidFingerprints = [], exactAttempt = null } = {}) {
   if (!DIFFICULTIES.includes(difficulty)) throw new RangeError('Difficulty must be easy, normal, or hard.');
-  const size = getGridSizeForLevel(level, difficulty);
-  return generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoidFingerprints });
+  if (journeySeed !== null && !isValidSeed(journeySeed)) throw new TypeError('journeySeed must be a valid saved seed.');
+  const selectedSize = size === null ? getGridSizeForLevel(level, difficulty, journeySeed) : size;
+  if (!DIFFICULTY_GRID_SIZES[difficulty].includes(selectedSize)) {
+    throw new RangeError(`Grid size ${selectedSize} is not available in ${difficulty} mode.`);
+  }
+  return generatePuzzleAtSize({ level, seed, size: selectedSize, difficulty, maxAttempts, avoidFingerprints, exactAttempt });
 }
+
 
 /** Compatibility entry point retained for older imports and tests. */
 export function generateEasyPuzzle(options = {}) {
@@ -247,9 +304,9 @@ export function generateEasyPuzzle(options = {}) {
 }
 
 /** Legacy generation is used only to resume a v4 Easy save's unfinished puzzle. */
-export function generateLegacyEasyPuzzle({ level = 1, seed = Date.now(), maxAttempts = 500, avoidFingerprints = [] } = {}) {
-  const size = getLegacyEasyGridSizeForLevel(level);
-  return generatePuzzleAtSize({ level, seed, size, difficulty: 'easy', maxAttempts, avoidFingerprints, minimumRunCount: 12 });
+export function generateLegacyEasyPuzzle({ level = 1, seed = Date.now(), size: savedSize = null, maxAttempts = 500, avoidFingerprints = [], exactAttempt = null } = {}) {
+  const size = savedSize === null ? getLegacyEasyGridSizeForLevel(level) : savedSize;
+  return generatePuzzleAtSize({ level, seed, size, difficulty: 'easy', maxAttempts, avoidFingerprints, exactAttempt, minimumRunCount: 12 });
 }
 
 export function isSolved(current, solution) {

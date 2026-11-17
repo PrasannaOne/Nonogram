@@ -16,7 +16,8 @@ let activeMode = gameState.currentMode;
 let progress = gameState.profiles[activeMode];
 let puzzle, board, activeTool = TOOL.FILL, pointerDown = false, activePointerId = null, completed = false;
 let lastHint = null, hintedCells = new Set(), storageWarning = false, focusedCell = { row: 0, col: 0 }, activeAxisStroke = null;
-let levelStartedAtMs = Date.now(), completedLevelNumber = null;
+let levelStartedAtMs = Date.now(), completedLevelNumber = null, activePuzzleSeed = null;
+let activeUsesLegacyGenerator = false, completedPuzzleForReplay = null;
 let previousCompletedLines = { rows: [], columns: [] };
 const THEME_KEY = 'prasannaone.nonogram.theme.v1';
 const THEMES = Object.freeze({
@@ -24,33 +25,66 @@ const THEMES = Object.freeze({
   forest: '#f1f7f1', midnight: '#171a27', amoled: '#000000'
 });
 
+function createJourneySeed() {
+  // 128 bits from Web Crypto give each fresh profile its own independent puzzle journey.
+  const words = new Uint32Array(4);
+  try {
+    if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(words);
+    else throw new Error('Web Crypto unavailable');
+  } catch {
+    for (let i = 0; i < words.length; i++) words[i] = Math.floor(Math.random() * 0x100000000);
+  }
+  if (words.every(value => value === 0)) words[0] = 1;
+  return [...words].map(value => value.toString(16).padStart(8, '0')).join('');
+}
+function ensureJourneySeed(profile) {
+  return typeof profile.journeySeed === 'string' && /^[a-f0-9]{32}$/i.test(profile.journeySeed)
+    ? profile : { ...profile, journeySeed: createJourneySeed() };
+}
 function seedFor(level, mode = activeMode, legacy = false) {
   if (legacy && mode === 'easy') return (0x51f15e + Math.imul(level, 0x9e3779b1)) >>> 0;
-  const salt = mode === 'normal' ? 0x2468ace0 : mode === 'hard' ? 0x10293847 : 0x13579bdf;
-  return (0x51f15e ^ salt ^ Math.imul(level, 0x9e3779b1)) >>> 0;
+  return `${progress.journeySeed}:puzzle:${mode}:${level}`;
 }
-function newBoardFor(level) {
-  const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
-  const seed = seedFor(level, activeMode, legacy);
-  const options = { level, seed, avoidFingerprints: progress.recentFingerprints };
-  const generated = legacy ? generateLegacyEasyPuzzle(options) : generatePuzzle({ ...options, difficulty: activeMode });
+function newBoardFor(level, savedPuzzle = null, legacyOverride = null) {
+  const legacy = typeof legacyOverride === 'boolean' ? legacyOverride
+    : typeof savedPuzzle?.legacy === 'boolean' ? savedPuzzle.legacy
+    : (activeMode === 'easy' && progress.generatorVersion === 1);
+  // A saved board's own seed and dimensions are authoritative. This preserves
+  // in-flight v1-v54 puzzles even though new journeys now use randomised bags.
+  const seed = savedPuzzle ? savedPuzzle.seed : seedFor(level, activeMode, legacy);
+  const exactAttempt = Number.isSafeInteger(savedPuzzle?.attempts) ? savedPuzzle.attempts - 1 : null;
+  // Old snapshots have no attempt index, so keep the original repeat-filter
+  // history. New snapshots pin the exact accepted attempt and can ignore it.
+  const avoidFingerprints = exactAttempt === null ? progress.recentFingerprints : [];
+  const options = { level, seed, avoidFingerprints, exactAttempt };
+  const generated = legacy
+    ? generateLegacyEasyPuzzle({ ...options, size: savedPuzzle?.width ?? null })
+    : generatePuzzle({ ...options, difficulty: activeMode, journeySeed: progress.journeySeed, size: savedPuzzle?.width ?? null });
+  if (savedPuzzle?.fingerprint && generated.fingerprint !== savedPuzzle.fingerprint) {
+    throw new Error('Saved puzzle fingerprint mismatch; refusing to load a different puzzle under the same progress record.');
+  }
   const model = new PuzzleBoard(generated.height, generated.width);
-  return { generated, model };
+  return { generated, model, seed, legacy };
 }
-function loadLevel(level) {
-  const made = newBoardFor(level);
-  puzzle = made.generated; board = made.model; completed = false; lastHint = null; focusedCell = { row: 0, col: 0 };
-  const savedPuzzle = getSavedPuzzle(progress, level);
-  const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
+function loadLevel(level, options = {}) {
+  const replaySpec = options.replaySpec || null;
+  const savedPuzzle = replaySpec
+    ? { seed: replaySpec.seed, width: replaySpec.width, height: replaySpec.height, attempts: replaySpec.attempts, fingerprint: replaySpec.fingerprint, legacy: replaySpec.legacy, board: null, hintedCells: [] }
+    : getSavedPuzzle(progress, level);
+  progress = ensureJourneySeed(progress);
+  const made = newBoardFor(level, savedPuzzle, replaySpec ? replaySpec.legacy : null);
+  puzzle = made.generated; board = made.model; activePuzzleSeed = made.seed;
+  activeUsesLegacyGenerator = made.legacy;
+  completed = false; lastHint = null; focusedCell = { row: 0, col: 0 };
   hintedCells = new Set();
-  const canRestore = savedPuzzle && savedPuzzle.seed === seedFor(level, activeMode, legacy) &&
-    savedPuzzle.width === puzzle.width && savedPuzzle.height === puzzle.height;
+  const canRestore = Boolean(savedPuzzle && Array.isArray(savedPuzzle.board) && savedPuzzle.seed === activePuzzleSeed &&
+    savedPuzzle.width === puzzle.width && savedPuzzle.height === puzzle.height);
   levelStartedAtMs = restoreLevelStartTime(canRestore ? savedPuzzle : null);
   if (canRestore) {
     savedPuzzle.board.forEach((row, r) => row.forEach((state, c) => { board.cells[r][c] = state; }));
     (savedPuzzle.hintedCells || []).forEach(({ row, col }) => hintedCells.add(`${row}:${col}`));
   }
-  progress = setCurrentPuzzle(progress, { level, seed: seedFor(level, activeMode, legacy), width: puzzle.width, height: puzzle.height, startedAtMs: levelStartedAtMs }, board.snapshot());
+  progress = setCurrentPuzzle(progress, { level, seed: activePuzzleSeed, width: puzzle.width, height: puzzle.height, startedAtMs: levelStartedAtMs, attempts: puzzle.attempts, fingerprint: puzzle.fingerprint, legacy: activeUsesLegacyGenerator }, board.snapshot());
   previousCompletedLines = getCompletedLines(board, puzzle.solution);
   save(); render();
 }
@@ -63,8 +97,8 @@ function persist() {
   catch (error) { console.warn('Nonogram progress could not be saved:', error); storageWarning = true; return false; }
 }
 function save() {
-  const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
-  progress = setCurrentPuzzle(progress, { level: puzzle.level, seed: seedFor(puzzle.level, activeMode, legacy), width: puzzle.width, height: puzzle.height, startedAtMs: levelStartedAtMs }, board.snapshot());
+  progress = ensureJourneySeed(progress);
+  progress = setCurrentPuzzle(progress, { level: puzzle.level, seed: activePuzzleSeed, width: puzzle.width, height: puzzle.height, startedAtMs: levelStartedAtMs, attempts: puzzle.attempts, fingerprint: puzzle.fingerprint, legacy: activeUsesLegacyGenerator }, board.snapshot());
   if (progress.currentPuzzle) progress.currentPuzzle.hintedCells = [...hintedCells].map(key => {
     const [row, col] = key.split(':').map(Number); return { row, col };
   });
@@ -151,7 +185,7 @@ function render() {
       // Native keyboard activation produces click without a preceding pointerdown.
       if (event.detail !== 0 || completed) return;
       board.applyCell(r, c, activeTool);
-      refreshCell(r, c); refreshLineMarks(); save(); checkComplete();
+      refreshCell(r, c); refreshLineMarks({ row: r, col: c }); save(); checkComplete();
     });
     cells.append(cell);
   }
@@ -199,52 +233,24 @@ function refreshCell(row, col) {
 }
 function restartAnimations(nodes, className) {
   if (!nodes.length || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-  // Batch class changes into one frame instead of forcing a layout per cell.
   for (const node of nodes) node.classList.remove(className);
   requestAnimationFrame(() => {
     for (const node of nodes) node.classList.add(className);
   });
 }
-function animateCompletedCells(lines) {
-  // A completed clue may include empty/crossed cells. Animate only the actual
-  // filled solution tiles, matching the requested restrained feedback.
-  const targets = new Set();
-  for (const row of lines.rows) {
-    for (let col = 0; col < puzzle.width; col++) {
-      if (board.getState(row, col) === CELL.FILLED) targets.add(`${row}:${col}`);
-    }
-  }
-  for (const col of lines.columns) {
-    for (let row = 0; row < puzzle.height; row++) {
-      if (board.getState(row, col) === CELL.FILLED) targets.add(`${row}:${col}`);
-    }
-  }
-  if (!targets.size) return;
-  // Build one lookup per completion event instead of doing a selector query
-  // for every tile. This keeps the work bounded and avoids repeated DOM walks.
-  const cellByPosition = new Map(Array.from($('board').querySelectorAll('.cell'),
-    cell => [`${cell.dataset.row}:${cell.dataset.col}`, cell]));
-  const cells = [];
-  let order = 0;
-  for (const key of targets) {
-    const cell = cellByPosition.get(key);
-    if (!cell) continue;
-    cell.style.setProperty('--completion-delay', `${Math.min(order, 8) * 12}ms`);
-    cells.push(cell);
-    order++;
-  }
-  restartAnimations(cells, 'line-completing');
+function animateCompletionCell(changedCell, newlyDone) {
+  if (!changedCell || board.getState(changedCell.row, changedCell.col) !== CELL.FILLED) return;
+  const lineWasCompleted = newlyDone.rows.includes(changedCell.row) || newlyDone.columns.includes(changedCell.col);
+  if (!lineWasCompleted) return;
+  const cell = $('board').querySelector(`[data-row="${changedCell.row}"][data-col="${changedCell.col}"]`);
+  if (cell) restartAnimations([cell], 'line-completing');
 }
 $('board').addEventListener('animationend', event => {
-  if (event.animationName === 'lineCellComplete') {
-    event.target.classList.remove('line-completing');
-    event.target.style.removeProperty('--completion-delay');
-  } else if (event.animationName === 'lineClueComplete') {
-    event.target.classList.remove('just-completed');
-  }
+  if (event.animationName === 'lineCellComplete') event.target.classList.remove('line-completing');
+  else if (event.animationName === 'lineClueComplete') event.target.classList.remove('just-completed');
 });
 
-function refreshLineMarks() {
+function refreshLineMarks(changedCell = null) {
   const done = getCompletedLines(board, puzzle.solution);
   const newlyDone = getNewlyCompletedLines(previousCompletedLines, done);
   const newlyCompletedClues = [];
@@ -267,12 +273,12 @@ function refreshLineMarks() {
   $('hintButton').disabled = !hasHintCandidate();
   previousCompletedLines = done;
   restartAnimations(newlyCompletedClues, 'just-completed');
-  if (newlyDone.rows.length || newlyDone.columns.length) animateCompletedCells(newlyDone);
+  animateCompletionCell(changedCell, newlyDone);
 }
 function paintCellAt(row, col) {
   if (board.paintCell(row, col)) {
     refreshCell(row, col);
-    refreshLineMarks();
+    refreshLineMarks({ row, col });
   }
 }
 function onCellDown(event) {
@@ -342,6 +348,7 @@ function checkComplete() {
   completed = true;
   const finishedLevel = puzzle.level;
   completedLevelNumber = finishedLevel;
+  completedPuzzleForReplay = { level: finishedLevel, seed: activePuzzleSeed, width: puzzle.width, height: puzzle.height, attempts: puzzle.attempts, fingerprint: puzzle.fingerprint, legacy: activeUsesLegacyGenerator };
   const elapsedMs = Math.max(0, Date.now() - levelStartedAtMs);
   const pointsBefore = progress.points;
   progress = completeLevel(progress, finishedLevel, puzzle.fingerprint, puzzle.points);
@@ -351,11 +358,16 @@ function checkComplete() {
   $('completionTime').textContent = formatElapsedTime(elapsedMs);
   $('completionPoints').textContent = String(pointsEarned);
   announceStatus(`Level ${finishedLevel} complete. Time ${formatElapsedTime(elapsedMs)}. ${pointsEarned} points earned.`);
-  $('board').classList.add('board-complete');
   $('clearBoardButton').disabled = true;
   $('undoButton').disabled = true;
   $('hintButton').disabled = true;
-  openDialog($('completionDialog'));
+  // Let the final cell/clue paint before presenting the summary. Two animation
+  // frames give a short, consistent delay without a fixed wall-clock timer.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (completed && completedLevelNumber === finishedLevel && !$('completionDialog').open) {
+      openDialog($('completionDialog'));
+    }
+  }));
 }
 function hasHintCandidate() { return puzzle.solution.some((row,r)=>row.some((v,c)=>v && board.getState(r,c)!==CELL.FILLED)); }
 function switchDifficulty(nextMode) {
@@ -364,8 +376,10 @@ function switchDifficulty(nextMode) {
   persist();
   gameState = selectGameMode(gameState, nextMode);
   activeMode = nextMode;
-  progress = gameState.profiles[activeMode];
+  progress = ensureJourneySeed(gameState.profiles[activeMode]);
+  gameState = updateModeProgress(gameState, activeMode, progress);
   activeTool = TOOL.FILL;
+  completedPuzzleForReplay = null;
   pointerDown = false; activePointerId = null; completed = false; lastHint = null;
   loadLevel(progress.currentLevel || 1);
 }
@@ -417,13 +431,18 @@ $('completionDialog').addEventListener('cancel', event => event.preventDefault()
 $('nextLevelButton').addEventListener('click', () => {
   closeDialog($('completionDialog'));
   completedLevelNumber = null;
+  completedPuzzleForReplay = null;
   loadLevel(progress.currentLevel);
 });
 $('replayLevelButton').addEventListener('click', () => {
+  const replay = completedPuzzleForReplay;
   const levelToReplay = completedLevelNumber;
   closeDialog($('completionDialog'));
   completedLevelNumber = null;
-  if (Number.isSafeInteger(levelToReplay) && levelToReplay > 0) loadLevel(levelToReplay);
+  if (Number.isSafeInteger(levelToReplay) && levelToReplay > 0 && replay?.level === levelToReplay) {
+    completed = false;
+    loadLevel(levelToReplay, { replaySpec: replay });
+  }
 });
 
 document.querySelectorAll('[data-tool]').forEach(btn=>btn.addEventListener('click',()=>{activeTool=btn.dataset.tool;render();}));
