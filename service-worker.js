@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prasannaone-nonogram-shell-v16';
+const CACHE_NAME = 'prasannaone-nonogram-shell-v18';
 const APP_BASE = new URL('./', self.location.href);
 const APP_SHELL = [
   './',
@@ -13,6 +13,7 @@ const APP_SHELL = [
   './web-port/progress.js',
   './web-port/storage.js',
   './web-port/layout.js',
+  './web-port/completion.js',
   './web-port/pointer-input.js',
   './web-port/keyboard-input.js'
 ].map(path => new URL(path, APP_BASE).href);

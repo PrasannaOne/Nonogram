@@ -50,7 +50,9 @@ function normalizePuzzleSnapshot(snapshot, highestUnlockedLevel) {
           cell.row >= 0 && cell.row < height && cell.col >= 0 && cell.col < width)
         .map(cell => [`${cell.row}:${cell.col}`, { row: cell.row, col: cell.col }])).values()]
     : [];
-  return { level, seed: seed >>> 0, width, height, board: board.map(row => row.slice()), hintedCells };
+  const startedAtMs = Number.isSafeInteger(snapshot.startedAtMs) && snapshot.startedAtMs > 0
+    ? snapshot.startedAtMs : null;
+  return { level, seed: seed >>> 0, width, height, board: board.map(row => row.slice()), hintedCells, startedAtMs };
 }
 
 export function normalizeProgress(input) {

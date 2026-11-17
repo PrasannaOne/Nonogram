@@ -6,6 +6,7 @@ import { getCellCoordinatesAtPoint, createAxisLockedStroke, getAxisLockedCell } 
 import { getKeyboardCellTarget } from './keyboard-input.js';
 import { createSafeStorage } from './storage.js';
 import { calculateBoardLayout } from './layout.js';
+import { formatElapsedTime, restoreLevelStartTime } from './completion.js';
 
 const $ = (id) => document.getElementById(id);
 const storage = createSafeStorage(window);
@@ -14,7 +15,8 @@ let gameState = repository.load();
 let activeMode = gameState.currentMode;
 let progress = gameState.profiles[activeMode];
 let puzzle, board, activeTool = TOOL.FILL, pointerDown = false, activePointerId = null, completed = false;
-let lastHint = null, hintedCells = new Set(), storageWarning = false, focusedCell = { row: 0, col: 0 }, advanceTimer = null, activeAxisStroke = null;
+let lastHint = null, hintedCells = new Set(), storageWarning = false, focusedCell = { row: 0, col: 0 }, activeAxisStroke = null;
+let levelStartedAtMs = Date.now(), completedLevelNumber = null;
 let previousCompletedLines = { rows: [], columns: [] };
 const THEME_KEY = 'prasannaone.nonogram.theme.v1';
 const THEMES = Object.freeze({
@@ -36,18 +38,19 @@ function newBoardFor(level) {
   return { generated, model };
 }
 function loadLevel(level) {
-  if (advanceTimer !== null) { clearTimeout(advanceTimer); advanceTimer = null; }
   const made = newBoardFor(level);
   puzzle = made.generated; board = made.model; completed = false; lastHint = null; focusedCell = { row: 0, col: 0 };
   const savedPuzzle = getSavedPuzzle(progress, level);
   const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
   hintedCells = new Set();
-  if (savedPuzzle && savedPuzzle.seed === seedFor(level, activeMode, legacy) &&
-      savedPuzzle.width === puzzle.width && savedPuzzle.height === puzzle.height) {
+  const canRestore = savedPuzzle && savedPuzzle.seed === seedFor(level, activeMode, legacy) &&
+    savedPuzzle.width === puzzle.width && savedPuzzle.height === puzzle.height;
+  levelStartedAtMs = restoreLevelStartTime(canRestore ? savedPuzzle : null);
+  if (canRestore) {
     savedPuzzle.board.forEach((row, r) => row.forEach((state, c) => { board.cells[r][c] = state; }));
     (savedPuzzle.hintedCells || []).forEach(({ row, col }) => hintedCells.add(`${row}:${col}`));
   }
-  progress = setCurrentPuzzle(progress, { level, seed: seedFor(level, activeMode, legacy), width: puzzle.width, height: puzzle.height }, board.snapshot());
+  progress = setCurrentPuzzle(progress, { level, seed: seedFor(level, activeMode, legacy), width: puzzle.width, height: puzzle.height, startedAtMs: levelStartedAtMs }, board.snapshot());
   previousCompletedLines = getCompletedLines(board, puzzle.solution);
   save(); render();
 }
@@ -61,7 +64,7 @@ function persist() {
 }
 function save() {
   const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
-  progress = setCurrentPuzzle(progress, { level: puzzle.level, seed: seedFor(puzzle.level, activeMode, legacy), width: puzzle.width, height: puzzle.height }, board.snapshot());
+  progress = setCurrentPuzzle(progress, { level: puzzle.level, seed: seedFor(puzzle.level, activeMode, legacy), width: puzzle.width, height: puzzle.height, startedAtMs: levelStartedAtMs }, board.snapshot());
   if (progress.currentPuzzle) progress.currentPuzzle.hintedCells = [...hintedCells].map(key => {
     const [row, col] = key.split(':').map(Number); return { row, col };
   });
@@ -203,19 +206,30 @@ function restartAnimations(nodes, className) {
   });
 }
 function animateCompletedCells(lines) {
-  const targets = new Map();
+  // A completed clue may include empty/crossed cells. Animate only the actual
+  // filled solution tiles, matching the requested restrained feedback.
+  const targets = new Set();
   for (const row of lines.rows) {
-    for (let col = 0; col < puzzle.width; col++) targets.set(`${row}:${col}`, { row, col });
+    for (let col = 0; col < puzzle.width; col++) {
+      if (board.getState(row, col) === CELL.FILLED) targets.add(`${row}:${col}`);
+    }
   }
   for (const col of lines.columns) {
-    for (let row = 0; row < puzzle.height; row++) targets.set(`${row}:${col}`, { row, col });
+    for (let row = 0; row < puzzle.height; row++) {
+      if (board.getState(row, col) === CELL.FILLED) targets.add(`${row}:${col}`);
+    }
   }
+  if (!targets.size) return;
+  // Build one lookup per completion event instead of doing a selector query
+  // for every tile. This keeps the work bounded and avoids repeated DOM walks.
+  const cellByPosition = new Map(Array.from($('board').querySelectorAll('.cell'),
+    cell => [`${cell.dataset.row}:${cell.dataset.col}`, cell]));
   const cells = [];
   let order = 0;
-  for (const { row, col } of targets.values()) {
-    const cell = $('board').querySelector(`[data-row="${row}"][data-col="${col}"]`);
+  for (const key of targets) {
+    const cell = cellByPosition.get(key);
     if (!cell) continue;
-    cell.style.setProperty('--completion-delay', `${Math.min(order, 12) * 14}ms`);
+    cell.style.setProperty('--completion-delay', `${Math.min(order, 8) * 12}ms`);
     cells.push(cell);
     order++;
   }
@@ -327,23 +341,26 @@ function checkComplete() {
   if (completed || !isBoardComplete(board, puzzle.solution)) return;
   completed = true;
   const finishedLevel = puzzle.level;
+  completedLevelNumber = finishedLevel;
+  const elapsedMs = Math.max(0, Date.now() - levelStartedAtMs);
+  const pointsBefore = progress.points;
   progress = completeLevel(progress, finishedLevel, puzzle.fingerprint, puzzle.points);
+  const pointsEarned = Math.max(0, progress.points - pointsBefore);
   persist();
-  announceStatus(`Level ${finishedLevel} complete. Loading the next puzzle.`);
+  $('completionTitle').textContent = `Level ${finishedLevel} accomplished!`;
+  $('completionTime').textContent = formatElapsedTime(elapsedMs);
+  $('completionPoints').textContent = String(pointsEarned);
+  announceStatus(`Level ${finishedLevel} complete. Time ${formatElapsedTime(elapsedMs)}. ${pointsEarned} points earned.`);
   $('board').classList.add('board-complete');
   $('clearBoardButton').disabled = true;
-  // The next puzzle starts automatically. Progress is committed first, so a
-  // refresh during this short celebration resumes at the next level.
-  advanceTimer = setTimeout(() => {
-    advanceTimer = null;
-    loadLevel(progress.currentLevel);
-  }, 560);
+  $('undoButton').disabled = true;
+  $('hintButton').disabled = true;
+  openDialog($('completionDialog'));
 }
 function hasHintCandidate() { return puzzle.solution.some((row,r)=>row.some((v,c)=>v && board.getState(r,c)!==CELL.FILLED)); }
 function switchDifficulty(nextMode) {
   if (!GAME_MODES.includes(nextMode) || nextMode === activeMode) return;
   if (pointerDown) finishStroke();
-  if (advanceTimer !== null) { clearTimeout(advanceTimer); advanceTimer = null; }
   persist();
   gameState = selectGameMode(gameState, nextMode);
   activeMode = nextMode;
@@ -370,7 +387,10 @@ document.querySelectorAll('[data-close-dialog]').forEach(button => {
   button.addEventListener('click', () => closeDialog($(button.dataset.closeDialog)));
 });
 document.querySelectorAll('dialog').forEach(dialog => {
-  dialog.addEventListener('click', event => { if (event.target === dialog) closeDialog(dialog); });
+  dialog.addEventListener('click', event => {
+    if (event.target !== dialog || dialog.id === 'completionDialog') return;
+    closeDialog(dialog);
+  });
 });
 async function shareGame() {
   const shareData = {
@@ -391,6 +411,20 @@ async function shareGame() {
   }
 }
 $('shareButton').addEventListener('click', shareGame);
+
+// Completion is an explicit choice: continue, replay this puzzle, or support the game.
+$('completionDialog').addEventListener('cancel', event => event.preventDefault());
+$('nextLevelButton').addEventListener('click', () => {
+  closeDialog($('completionDialog'));
+  completedLevelNumber = null;
+  loadLevel(progress.currentLevel);
+});
+$('replayLevelButton').addEventListener('click', () => {
+  const levelToReplay = completedLevelNumber;
+  closeDialog($('completionDialog'));
+  completedLevelNumber = null;
+  if (Number.isSafeInteger(levelToReplay) && levelToReplay > 0) loadLevel(levelToReplay);
+});
 
 document.querySelectorAll('[data-tool]').forEach(btn=>btn.addEventListener('click',()=>{activeTool=btn.dataset.tool;render();}));
 $('undoButton').addEventListener('click',()=>{if(board.undo()){save();render();}});
