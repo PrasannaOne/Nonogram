@@ -137,7 +137,7 @@ npm run stress:endless
 
 Made by **Prasanna**, known as **PrasannaOne**.
 
-Nonogram is an independent project created and maintained by one person. **Prasanna and PrasannaOne are the same creator identity.**
+Nonogram is an independent project created and maintained by one person.
 
 If you enjoy the game, you can support its continued development through [Ko-fi](https://ko-fi.com/prasannaone). Support is optional; the game can be played without an account or payment.
 
@@ -145,6 +145,6 @@ If you enjoy the game, you can support its continued development through [Ko-fi]
 
 <div align="center">
 
-**PrasannaOne** · Made with care, one grid at a time.
+**Prasanna ❤️** · Made with care, one grid at a time.
 
 </div>
