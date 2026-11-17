@@ -11,7 +11,7 @@ export const LEVELS_PER_PAGE = 10;  // Legacy helper only; no level picker in th
 export const MAX_LEVEL_ID = 1_000_000;
 export const MAX_GRID_SIZE = 12;
 export const POINTS_PER_GRID_DIMENSION = 30; // Native formula: square grid size × 30.
-export const HINT_COST = 5;
+export const HINT_COST = 15; // Base per-cell cost; getHintCost scales with the current grid.
 export const RECENT_FINGERPRINT_LIMIT = 128;
 
 export function createInitialProgress() {
@@ -44,7 +44,13 @@ function normalizePuzzleSnapshot(snapshot, highestUnlockedLevel) {
       !Number.isSafeInteger(seed) || !Array.isArray(board) || board.length !== height) return null;
   if (!board.every(row => Array.isArray(row) && row.length === width &&
       row.every(cell => VALID_CELL_STATES.has(cell)))) return null;
-  return { level, seed: seed >>> 0, width, height, board: board.map(row => row.slice()) };
+  const hintedCells = Array.isArray(snapshot.hintedCells)
+    ? [...new Map(snapshot.hintedCells
+        .filter(cell => cell && Number.isInteger(cell.row) && Number.isInteger(cell.col) &&
+          cell.row >= 0 && cell.row < height && cell.col >= 0 && cell.col < width)
+        .map(cell => [`${cell.row}:${cell.col}`, { row: cell.row, col: cell.col }])).values()]
+    : [];
+  return { level, seed: seed >>> 0, width, height, board: board.map(row => row.slice()), hintedCells };
 }
 
 export function normalizeProgress(input) {
@@ -154,11 +160,23 @@ export function completeLevel(progress, level, fingerprint = null, pointReward =
   };
 }
 
-export function spendHintPoints(progress) {
+export function getHintCost(size) {
+  if (!Number.isInteger(size) || size < 1 || size > MAX_GRID_SIZE) {
+    throw new RangeError('Grid size must be an integer from 1 to 12.');
+  }
+  // A completed puzzle awards size × 30 points. One hint costs half that
+  // reward, so a player earns at most two hints per completed level.
+  return size * HINT_COST;
+}
+
+export function spendHintPoints(progress, cost = HINT_COST) {
   const state = normalizeProgress(progress);
-  if (state.points < HINT_COST) return { progress: state, success: false, remaining: state.points };
-  const next = { ...state, points: state.points - HINT_COST };
-  return { progress: next, success: true, remaining: next.points };
+  if (!Number.isSafeInteger(cost) || cost < 1 || cost > 360) {
+    throw new RangeError('Hint cost must be an integer from 1 to 360.');
+  }
+  if (state.points < cost) return { progress: state, success: false, remaining: state.points, cost };
+  const next = { ...state, points: state.points - cost };
+  return { progress: next, success: true, remaining: next.points, cost };
 }
 
 export function setCurrentPuzzle(progress, puzzle, board) {

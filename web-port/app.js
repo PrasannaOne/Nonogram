@@ -1,7 +1,7 @@
 
 import { generatePuzzle, generateLegacyEasyPuzzle } from './nonogram.js';
 import { PuzzleBoard, CELL, TOOL, getCompletedLines, getNewlyCompletedLines, isBoardComplete } from './interaction.js';
-import { createGameRepository, updateModeProgress, selectGameMode, completeLevel, setCurrentPuzzle, getSavedPuzzle, spendHintPoints, HINT_COST, GAME_MODES } from './progress.js';
+import { createGameRepository, updateModeProgress, selectGameMode, completeLevel, setCurrentPuzzle, getSavedPuzzle, spendHintPoints, getHintCost, GAME_MODES } from './progress.js';
 import { getCellCoordinatesAtPoint, createAxisLockedStroke, getAxisLockedCell } from './pointer-input.js';
 import { getKeyboardCellTarget } from './keyboard-input.js';
 import { createSafeStorage } from './storage.js';
@@ -14,7 +14,7 @@ let gameState = repository.load();
 let activeMode = gameState.currentMode;
 let progress = gameState.profiles[activeMode];
 let puzzle, board, activeTool = TOOL.FILL, pointerDown = false, activePointerId = null, completed = false;
-let lastHint = null, storageWarning = false, focusedCell = { row: 0, col: 0 }, advanceTimer = null, activeAxisStroke = null;
+let lastHint = null, hintedCells = new Set(), storageWarning = false, focusedCell = { row: 0, col: 0 }, advanceTimer = null, activeAxisStroke = null;
 let previousCompletedLines = { rows: [], columns: [] };
 const THEME_KEY = 'prasannaone.nonogram.theme.v1';
 const THEMES = Object.freeze({
@@ -41,9 +41,11 @@ function loadLevel(level) {
   puzzle = made.generated; board = made.model; completed = false; lastHint = null; focusedCell = { row: 0, col: 0 };
   const savedPuzzle = getSavedPuzzle(progress, level);
   const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
+  hintedCells = new Set();
   if (savedPuzzle && savedPuzzle.seed === seedFor(level, activeMode, legacy) &&
       savedPuzzle.width === puzzle.width && savedPuzzle.height === puzzle.height) {
     savedPuzzle.board.forEach((row, r) => row.forEach((state, c) => { board.cells[r][c] = state; }));
+    (savedPuzzle.hintedCells || []).forEach(({ row, col }) => hintedCells.add(`${row}:${col}`));
   }
   progress = setCurrentPuzzle(progress, { level, seed: seedFor(level, activeMode, legacy), width: puzzle.width, height: puzzle.height }, board.snapshot());
   previousCompletedLines = getCompletedLines(board, puzzle.solution);
@@ -60,6 +62,9 @@ function persist() {
 function save() {
   const legacy = activeMode === 'easy' && progress.generatorVersion === 1;
   progress = setCurrentPuzzle(progress, { level: puzzle.level, seed: seedFor(puzzle.level, activeMode, legacy), width: puzzle.width, height: puzzle.height }, board.snapshot());
+  if (progress.currentPuzzle) progress.currentPuzzle.hintedCells = [...hintedCells].map(key => {
+    const [row, col] = key.split(':').map(Number); return { row, col };
+  });
   persist();
 }
 function make(tag, cls, text) { const node = document.createElement(tag); if (cls) node.className = cls; if (text !== undefined) node.textContent = text; return node; }
@@ -393,18 +398,24 @@ $('clearBoardButton').addEventListener('click',()=>{
   if (completed) return;
   if (pointerDown) finishStroke();
   if (!board.reset()) return;
+  // Restart player marks, but keep cells already revealed by purchased hints.
+  for (const key of hintedCells) {
+    const [row, col] = key.split(':').map(Number);
+    board.cells[row][col] = CELL.FILLED;
+  }
   lastHint = null;
   save();
   render();
-  announceStatus('Grid cleared.');
+  announceStatus('Level restarted. Revealed hints were kept.');
 });
 $('hintButton').addEventListener('click',()=>{
-  const purchase = spendHintPoints(progress);
-  if (!purchase.success) { announceStatus(`A hint costs ${HINT_COST} points. You have ${progress.points}.`); return; }
+  const hintCost = getHintCost(puzzle.width);
+  const purchase = spendHintPoints(progress, hintCost);
+  if (!purchase.success) { announceStatus(`A hint costs ${hintCost} points. You have ${progress.points}.`); return; }
   const revealed = board.giveHint(puzzle.solution);
   if (revealed) {
     const beforeHintLines = previousCompletedLines;
-    progress = purchase.progress; lastHint = revealed; save(); render();
+    progress = purchase.progress; lastHint = revealed; hintedCells.add(`${revealed.row}:${revealed.col}`); save(); render();
     previousCompletedLines = beforeHintLines;
     refreshLineMarks();
     announceStatus('Hint revealed.'); checkComplete();

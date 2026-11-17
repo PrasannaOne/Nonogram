@@ -100,7 +100,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 .brand-heart { color: var(--heart); box-shadow: 0 0 0 1px color-mix(in srgb, var(--heart) 18%, transparent), 0 5px 18px color-mix(in srgb, var(--heart) 18%, transparent), inset 0 1px 0 rgba(255,255,255,.55); }
 .brand-heart svg { width: 25px; height: 25px; fill: var(--heart); stroke: var(--heart); stroke-width: .65; filter: drop-shadow(0 1px 4px color-mix(in srgb, var(--heart) 30%, transparent)); }
 .icon-button:active { transform: scale(.9); box-shadow: inset 0 2px 5px rgba(40,45,65,.12); }
-.game-area { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 7px; }
+.game-area { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; gap: 5px; }
 .level-row { position: relative; min-height: 58px; flex: 0 0 58px; display: grid; grid-template-columns: 46px minmax(0,1fr) 46px; align-items: center; gap: 8px; }
 .level-caption {
   display: grid; justify-items: center; align-content: center; gap: 3px; color: var(--muted);
@@ -112,7 +112,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 .level-caption strong { color: var(--muted-strong); font-weight: 600; }
 .caption-separator { color: var(--accent-strong); opacity: .85; }
 .clear-board-button {
-  width: 44px; height: 44px; display: grid; place-items: center; padding: 0;
+  width: 50px; height: 50px; display: grid; place-items: center; padding: 0;
   border: 1px solid var(--glass-border); border-radius: 50%; background: var(--glass); color: var(--muted-strong);
   box-shadow: 0 5px 14px rgba(50,55,80,.06), inset 0 1px 0 rgba(255,255,255,.55);
   backdrop-filter: blur(16px) saturate(1.25); -webkit-backdrop-filter: blur(16px) saturate(1.25);
@@ -122,16 +122,16 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 .clear-board-button:active:not(:disabled) { transform: scale(.9); }
 .clear-board-button:disabled { opacity: .32; cursor: default; }
 .hint-button {
-  justify-self: end; width: 44px; height: 44px; display: grid; place-items: center; padding: 0;
+  justify-self: end; width: 50px; height: 50px; display: grid; place-items: center; padding: 0;
   border: 1px solid var(--glass-border); border-radius: 50%; background: var(--glass); color: var(--accent-ink);
   box-shadow: 0 5px 14px rgba(50,55,80,.06), inset 0 1px 0 rgba(255,255,255,.55);
   backdrop-filter: blur(16px) saturate(1.25); -webkit-backdrop-filter: blur(16px) saturate(1.25);
   cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
 }
 .hint-button svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.hint-button:active { transform: scale(.9); }
+.hint-button:active { transform: scale(.96); }
 .hint-button:disabled { opacity: .35; cursor: default; }
-.board-wrap { flex: 1 1 auto; min-width: 0; min-height: 0; width: 100%; display: grid; place-items: center; overflow: hidden; container-type: size; }
+.board-wrap { flex: 1 1 auto; min-width: 0; min-height: 0; width: 100%; display: grid; place-items: center; overflow: hidden; container-type: size; padding-bottom: clamp(14px, 3.2vh, 34px); }
 .board {
   --n: 5; --cell-size: 32px; --row-clue-width: 38px; --column-clue-height: 42px; --clue-font-size: 11px; --grid-stroke: clamp(2.5px, .62vw, 4px);
   display: grid; grid-template-columns: var(--row-clue-width) repeat(var(--n), var(--cell-size));
@@ -155,7 +155,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 .cells {
   grid-column: 2; grid-row: 2; display: grid;
   grid-template-columns: repeat(var(--n), var(--cell-size)); grid-template-rows: repeat(var(--n), var(--cell-size));
-  border-top: var(--grid-stroke) solid var(--grid-strong); border-left: var(--grid-stroke) solid var(--grid-strong); background: var(--grid-strong);
+  position: relative; background: var(--grid-strong);
+  box-shadow: inset 0 0 0 var(--grid-stroke) var(--grid-strong);
 }
 .cell {
   position: relative; min-width: 0; min-height: 0; display: grid; place-items: center; padding: 0;
@@ -174,19 +175,19 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 }
 .cell.crossed::before { transform: rotate(-45deg); }
 .cell.crossed::after { transform: rotate(45deg); }
-.cell.hinted { z-index: 1; animation: hintPulse .65s ease 2; }
-.cell.filled.hinted { outline: 3px solid var(--accent-strong); outline-offset: -3px; }
-@keyframes hintPulse { 50% { box-shadow: inset 0 0 0 4px var(--surface); } }
+.cell.hinted { z-index: 1; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-strong) 65%, transparent); }
+.cell.filled.hinted { outline: 2px solid var(--accent-strong); outline-offset: -2px; }
+
 .board.board-complete { animation: boardWin .48s ease both; }
 @keyframes boardWin { 50% { transform: scale(1.012); filter: saturate(1.12); } }
 .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
 .toolbar {
-  min-height: calc(148px + env(safe-area-inset-bottom)); flex: 0 0 calc(148px + env(safe-area-inset-bottom));
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 5vw, 24px); align-items: center; justify-items: center;
+  min-height: calc(160px + env(safe-area-inset-bottom)); flex: 0 0 calc(160px + env(safe-area-inset-bottom));
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 6vw, 30px); align-items: center; justify-items: center;
   padding: 8px 0 max(8px, env(safe-area-inset-bottom)); border-top: 0;
 }
 .tool-button {
-  width: min(122px, 100%); aspect-ratio: 1; min-width: 0; max-width: 122px; display: grid; place-items: center;
+  width: min(136px, 100%); aspect-ratio: 1; min-width: 0; max-width: 136px; display: grid; place-items: center;
   border: 1px solid var(--glass-border); border-radius: 50%; background: var(--glass); color: var(--muted);
   cursor: pointer; touch-action: manipulation; box-shadow: 0 12px 28px rgba(50,55,80,.10), inset 0 1px 0 rgba(255,255,255,.72);
   backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
@@ -286,4 +287,10 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .board.board-complete, .cell.line-completing, .clue.just-completed { animation: none !important; }
+}
+
+@media (max-height: 700px) {
+  .toolbar { min-height: calc(124px + env(safe-area-inset-bottom)); flex-basis: calc(124px + env(safe-area-inset-bottom)); }
+  .tool-button { width: min(112px, 100%); max-width: 112px; }
+  .board-wrap { padding-bottom: 8px; }
 }
