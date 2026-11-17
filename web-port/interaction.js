@@ -206,6 +206,18 @@ export function getCompletedLines(board, solution) {
   };
 }
 
+/** Return only row/column indices that became complete since the prior check. */
+export function getNewlyCompletedLines(previous, current) {
+  const previousRows = new Set(Array.isArray(previous?.rows) ? previous.rows : []);
+  const previousColumns = new Set(Array.isArray(previous?.columns) ? previous.columns : []);
+  const rows = Array.isArray(current?.rows) ? current.rows : [];
+  const columns = Array.isArray(current?.columns) ? current.columns : [];
+  return {
+    rows: rows.filter(index => Number.isInteger(index) && !previousRows.has(index)),
+    columns: columns.filter(index => Number.isInteger(index) && !previousColumns.has(index))
+  };
+}
+
 /**
  * The native IsLevelDone method checks the aggregate line-completion flags.
  * With the uniquely solvable puzzle set used by this product, every row and

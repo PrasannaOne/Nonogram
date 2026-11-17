@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prasannaone-nonogram-shell-v14';
+const CACHE_NAME = 'prasannaone-nonogram-shell-v15';
 const APP_BASE = new URL('./', self.location.href);
 const APP_SHELL = [
   './',
@@ -27,13 +27,25 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys
-        .filter(key => key.startsWith('prasannaone-nonogram-shell-') && key !== CACHE_NAME)
-        .map(key => caches.delete(key))))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    const previousShells = keys.filter(key =>
+      key.startsWith('prasannaone-nonogram-shell-') && key !== CACHE_NAME
+    );
+    await Promise.all(previousShells.map(key => caches.delete(key)));
+    await self.clients.claim();
+
+    // When upgrading an existing installation, navigate open game tabs once so
+    // they immediately load the new shell. First installs do not force a reload.
+    if (previousShells.length) {
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      await Promise.all(clients.map(client => {
+        const url = new URL(client.url);
+        if (url.origin !== self.location.origin || !url.href.startsWith(APP_BASE.href)) return null;
+        return client.navigate(client.url).catch(() => null);
+      }));
+    }
+  })());
 });
 
 self.addEventListener('fetch', event => {
@@ -57,13 +69,17 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Network-first for app assets: online visits pick up new deployments without
+  // asking users to clear browser data. The installed shell remains the offline fallback.
   event.respondWith(
-    caches.match(request).then(cached => cached || fetch(request).then(response => {
-      if (response.ok) {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-      }
-      return response;
-    }))
+    fetch(new Request(request, { cache: 'no-cache' }))
+      .then(response => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        }
+        return response;
+      })
+      .catch(async () => (await caches.match(request)) || Response.error())
   );
 });

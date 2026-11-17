@@ -1,6 +1,6 @@
 
 import { generatePuzzle, generateLegacyEasyPuzzle } from './nonogram.js';
-import { PuzzleBoard, CELL, TOOL, getCompletedLines, isBoardComplete } from './interaction.js';
+import { PuzzleBoard, CELL, TOOL, getCompletedLines, getNewlyCompletedLines, isBoardComplete } from './interaction.js';
 import { createGameRepository, updateModeProgress, selectGameMode, completeLevel, setCurrentPuzzle, getSavedPuzzle, spendHintPoints, HINT_COST, GAME_MODES } from './progress.js';
 import { getCellCoordinatesAtPoint, createAxisLockedStroke, getAxisLockedCell } from './pointer-input.js';
 import { getKeyboardCellTarget } from './keyboard-input.js';
@@ -15,6 +15,7 @@ let activeMode = gameState.currentMode;
 let progress = gameState.profiles[activeMode];
 let puzzle, board, activeTool = TOOL.FILL, pointerDown = false, activePointerId = null, completed = false;
 let lastHint = null, storageWarning = false, focusedCell = { row: 0, col: 0 }, advanceTimer = null, activeAxisStroke = null;
+let previousCompletedLines = { rows: [], columns: [] };
 const THEME_KEY = 'prasannaone.nonogram.theme.v1';
 const THEMES = Object.freeze({
   lavender: '#f7f4fb', ocean: '#f0f8fc', rose: '#fff4f6',
@@ -45,6 +46,7 @@ function loadLevel(level) {
     savedPuzzle.board.forEach((row, r) => row.forEach((state, c) => { board.cells[r][c] = state; }));
   }
   progress = setCurrentPuzzle(progress, { level, seed: seedFor(level, activeMode, legacy), width: puzzle.width, height: puzzle.height }, board.snapshot());
+  previousCompletedLines = getCompletedLines(board, puzzle.solution);
   save(); render();
 }
 function persist() {
@@ -150,6 +152,7 @@ function render() {
   $('undoButton').disabled = !board.canUndo();
   $('clearBoardButton').disabled = !board.snapshot().some(row => row.some(state => state !== CELL.UNKNOWN));
   $('hintButton').disabled = !hasHintCandidate();
+  previousCompletedLines = doneLines;
   document.querySelectorAll('[data-tool]').forEach(btn => {
     const selected=btn.dataset.tool===activeTool; btn.classList.toggle('active',selected); btn.setAttribute('aria-pressed',String(selected));
   });
@@ -186,23 +189,66 @@ function refreshCell(row, col) {
   cell.classList.toggle('crossed', state === CELL.CROSSED);
   cell.setAttribute('aria-label', `Row ${row+1}, column ${col+1}, ${state}`);
 }
+function restartAnimations(nodes, className) {
+  if (!nodes.length || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  // Batch class changes into one frame instead of forcing a layout per cell.
+  for (const node of nodes) node.classList.remove(className);
+  requestAnimationFrame(() => {
+    for (const node of nodes) node.classList.add(className);
+  });
+}
+function animateCompletedCells(lines) {
+  const targets = new Map();
+  for (const row of lines.rows) {
+    for (let col = 0; col < puzzle.width; col++) targets.set(`${row}:${col}`, { row, col });
+  }
+  for (const col of lines.columns) {
+    for (let row = 0; row < puzzle.height; row++) targets.set(`${row}:${col}`, { row, col });
+  }
+  const cells = [];
+  let order = 0;
+  for (const { row, col } of targets.values()) {
+    const cell = $('board').querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    if (!cell) continue;
+    cell.style.setProperty('--completion-delay', `${Math.min(order, 12) * 14}ms`);
+    cells.push(cell);
+    order++;
+  }
+  restartAnimations(cells, 'line-completing');
+}
+$('board').addEventListener('animationend', event => {
+  if (event.animationName === 'lineCellComplete') {
+    event.target.classList.remove('line-completing');
+    event.target.style.removeProperty('--completion-delay');
+  } else if (event.animationName === 'lineClueComplete') {
+    event.target.classList.remove('just-completed');
+  }
+});
+
 function refreshLineMarks() {
   const done = getCompletedLines(board, puzzle.solution);
+  const newlyDone = getNewlyCompletedLines(previousCompletedLines, done);
+  const newlyCompletedClues = [];
   $('board').querySelectorAll('.row-clue').forEach((node, i) => {
     const isDone = done.rows.includes(i);
     node.classList.toggle('done', isDone);
+    if (newlyDone.rows.includes(i)) newlyCompletedClues.push(node);
     const clue = puzzle.clues.rows[i];
     node.setAttribute('aria-label', `Row ${i + 1} clue: ${clue[0] === 0 ? 'no filled cells' : clue.join(', ')}${isDone ? ', complete' : ''}`);
   });
   $('board').querySelectorAll('.column-clue').forEach((node, i) => {
     const isDone = done.columns.includes(i);
     node.classList.toggle('done', isDone);
+    if (newlyDone.columns.includes(i)) newlyCompletedClues.push(node);
     const clue = puzzle.clues.columns[i];
     node.setAttribute('aria-label', `Column ${i + 1} clue: ${clue[0] === 0 ? 'no filled cells' : clue.join(', ')}${isDone ? ', complete' : ''}`);
   });
   $('undoButton').disabled = !board.canUndo();
   $('clearBoardButton').disabled = !board.snapshot().some(row => row.some(state => state !== CELL.UNKNOWN));
   $('hintButton').disabled = !hasHintCandidate();
+  previousCompletedLines = done;
+  restartAnimations(newlyCompletedClues, 'just-completed');
+  if (newlyDone.rows.length || newlyDone.columns.length) animateCompletedCells(newlyDone);
 }
 function paintCellAt(row, col) {
   if (board.paintCell(row, col)) {
@@ -356,7 +402,13 @@ $('hintButton').addEventListener('click',()=>{
   const purchase = spendHintPoints(progress);
   if (!purchase.success) { announceStatus(`A hint costs ${HINT_COST} points. You have ${progress.points}.`); return; }
   const revealed = board.giveHint(puzzle.solution);
-  if (revealed) { progress = purchase.progress; lastHint = revealed; save(); render(); announceStatus('Hint revealed.'); checkComplete(); }
+  if (revealed) {
+    const beforeHintLines = previousCompletedLines;
+    progress = purchase.progress; lastHint = revealed; save(); render();
+    previousCompletedLines = beforeHintLines;
+    refreshLineMarks();
+    announceStatus('Hint revealed.'); checkComplete();
+  }
 });
 try { loadLevel(progress.currentLevel || 1); }
 catch(error) { console.error(error); announceStatus('Could not create this puzzle. Reload to try again.'); }
@@ -365,8 +417,12 @@ catch(error) { console.error(error); announceStatus('Could not create this puzzl
 // GitHub Pages is served over HTTPS, so the app can install its offline shell.
 // Service-worker failure must never block normal gameplay.
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .catch(error => console.warn('Nonogram offline support could not be registered:', error));
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' });
+      if (navigator.onLine && typeof registration.update === 'function') await registration.update();
+    } catch (error) {
+      console.warn('Nonogram offline support could not be registered:', error);
+    }
   }, { once: true });
 }
