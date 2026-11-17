@@ -1,9 +1,9 @@
 <div align="center">
 
-# 🧩 PrasannaOne Nonogram
+# 🧩 Nonogram
 
 <p>
-  <a href="https://prasannaone.github.io/Nonogram/"><img src="https://img.shields.io/badge/▶_PLAY_NOW-OPEN_NONOGRAM-6f8fc4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Play Nonogram" /></a>
+  <a href="https://prasannaone.github.io/Nonogram/"><img src="https://img.shields.io/badge/▶_PLAY_NOW-PLAY_NONOGRAM-7189b8?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Play Nonogram" /></a>
 </p>
 
 **[Play Nonogram](https://prasannaone.github.io/Nonogram/)** · **[Source repository](https://github.com/PrasannaOne/Nonogram)**
@@ -24,11 +24,9 @@
 
 ## What is Nonogram?
 
-PrasannaOne Nonogram is an independently implemented, browser-based picture-logic puzzle game. Solve the grid by using the numbered clues along each row and column to discover which cells should be filled.
+Nonogram is a browser-based picture-logic puzzle game made by **Prasanna (PrasannaOne)**. Use the numbered clues along each row and column to work out which cells should be filled and reveal the hidden pattern.
 
-The project is designed around a direct-to-game experience: open the page and play. It combines an endless puzzle journey with three difficulty profiles, responsive square-cell boards, touch-friendly controls and locally saved progress.
-
-The implementation is informed by research into the original game's mechanics and recovered configuration data. The playable runtime is independently implemented: it does not import original game code, artwork, fonts, branding or level content. Where the project follows recovered behaviour, the README distinguishes that evidence from our own product decisions.
+The game is designed around a direct-to-game experience: open the page and play. It combines an endless puzzle journey with three difficulty profiles, responsive square-cell boards, touch-friendly controls and locally saved progress.
 
 **No account or installation is required:** open the [game website](https://prasannaone.github.io/Nonogram/) and start solving.
 
@@ -72,7 +70,7 @@ Each difficulty has its own independent profile:
 
 New profiles receive a random 128-bit journey ID. That identity drives the player's own deterministic sequence: a new player gets an independently generated journey, while the same saved journey can reconstruct its puzzles after reload.
 
-Grid sizes are shuffled within the difficulty's size bag. The generator validates puzzle uniqueness and avoids recently used fingerprints. This does not create a mathematical guarantee that two different players can never receive the same puzzle; it makes their journeys independently generated.
+Grid sizes are shuffled within the difficulty's size bag. The generator validates puzzle uniqueness and avoids recently used fingerprints. Different players have independently generated journeys, although identical puzzles may occur by chance.
 
 **Save portability:** progress is currently stored locally in the browser. There is no account-based cloud sync or built-in backup/restore yet. Clearing site data or moving to another device without transferring browser storage can lose the existing journey.
 
@@ -80,12 +78,11 @@ Grid sizes are shuffled within the difficulty's size bag. The generator validate
 
 - First-time level completion awards points based on the grid dimension: `grid size × 30`.
 - A completed level is not rewarded again when replayed.
-- A hint reveals one solution-filled cell and uses the current product hint-cost rule.
-- The hint price and other balance choices are product decisions; they are not claims about the original game's serialized economy.
+- A hint reveals one solution-filled cell and uses the current hint-cost rule.
 
 ## The current build: v56
 
-v56 is a deep polish and reliability pass over the browser implementation.
+v56 is a deep polish and reliability pass.
 
 - The grid's top and left perimeter edges are painted directly by the first-row and first-column cell elements.
 - Replay and resume retain the accepted generator attempt, fingerprint and legacy-generator mode so the same puzzle can be reconstructed.
@@ -94,16 +91,6 @@ v56 is a deep polish and reliability pass over the browser implementation.
 - The service worker checks for updates at launch and refreshes static assets network-first, with cache fallback when offline.
 
 The v56 automated suite reports 138 passing tests, plus static audit and generator stress checks: 340 generator samples, 60 difficulty samples and 2,000 randomized-journey puzzles. These are automated results from the recorded test environment. They do not establish lag-free performance on every phone or exhaustive browser/device compatibility. Physical-device touch/layout and browser visual/end-to-end testing remain necessary.
-
-See `DEEP_AUDIT_v56.md`, `QA_v56.txt`, `RELEASE_NOTES_v56.md` and `RELEASE_CHECKLIST.md` for the measured results and remaining checks.
-
-## Original-game research and independent implementation
-
-The project includes a read-only research/reference collection documenting recovered mechanics, configuration arrays, code paths and implementation notes. The playable browser runtime is separately authored and does not import original game code, assets, branding, fonts or level content.
-
-Recovered facts and product decisions are kept distinct. For example, the difficulty grid-size sets and point award formula are documented as recovered behaviour, while the current uniqueness-constrained puzzle generator, player-specific journey IDs, six themes and hint pricing are implementation/product choices.
-
-The research materials are retained for traceability. Their presence does not grant rights to third-party material or imply that every original implementation detail has been reproduced.
 
 ## Run locally
 
@@ -145,29 +132,14 @@ npm run stress:endless
 | `manifest.webmanifest` | PWA metadata |
 | `tests/` | Regression and behaviour tests |
 | `scripts/` | Static audit and generator stress utilities |
-| `REFERENCE/` | Read-only original-game research and recovered evidence |
 
-## Documentation
+## Credits
 
-- `START_HERE.txt` — current project handoff and orientation.
-- `PRODUCT_SCOPE.md` — approved product direction and excluded features.
-- `MECHANICS_PARITY_NOTES.md` — recovered mechanics versus browser implementation.
-- `JOURNEY_RANDOMIZATION_v55.md` — player-specific journey design and save compatibility.
-- `DEEP_AUDIT_v56.md` — v56 source audit, fixes and known limitations.
-- `QA_v56.txt` — current automated QA summary.
-- `RELEASE_NOTES_v56.md` — v56 release changes.
-- `RELEASE_CHECKLIST.md` — automated and real-device verification status.
-- `CHANGELOG.md` — version history.
+Made by **Prasanna**, known as **PrasannaOne**.
 
-## Credits and rights
+Nonogram is an independent project created and maintained by one person. **Prasanna and PrasannaOne are the same creator identity.**
 
-Created by **Prasanna** as part of **PrasannaOne**.
-
-This is an independent Nonogram implementation and research project. It is not affiliated with, sponsored by or endorsed by any original Nonogram game developer or rights holder. Names, marks, code, artwork, fonts, sounds and other materials belonging to third parties remain theirs. The project does not claim ownership of third-party materials referenced in its research.
-
-The project's own authored source, documentation, tests and tools are governed by the root `LICENSE`. The license is source-available and proprietary; it is **not** an OSI-approved open-source license. Read it before using or modifying the project.
-
-If you enjoy the project, you can support its continued development through [Ko-fi](https://ko-fi.com/prasannaone). Support is optional; the game can be played without an account or payment.
+If you enjoy the game, you can support its continued development through [Ko-fi](https://ko-fi.com/prasannaone). Support is optional; the game can be played without an account or payment.
 
 ---
 
