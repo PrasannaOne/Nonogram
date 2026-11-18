@@ -109,6 +109,7 @@
   </dialog>
 
   <dialog class="dialog completion-dialog" id="completionDialog" aria-labelledby="completionTitle" aria-describedby="completionSummary">
+    <div class="completion-mark" aria-hidden="true">✓</div>
     <h2 id="completionTitle">Level accomplished!</h2>
     <div class="completion-stats" id="completionSummary" aria-live="polite">
       <p class="completion-stat">Time taken: <strong id="completionTime">00m 00s</strong></p>
@@ -117,7 +118,7 @@
     <div class="completion-actions">
       <button class="completion-action completion-next" id="nextLevelButton" type="button" autofocus>Next</button>
       <button class="completion-action completion-replay" id="replayLevelButton" type="button">Replay</button>
-      <a class="completion-action completion-kofi" href="https://ko-fi.com/prasannaone" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee on Ko-fi">
+      <a class="completion-action completion-kofi" id="completionKofi" hidden href="https://ko-fi.com/prasannaone" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee on Ko-fi">
         <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
           <path d="M5 10.5h19v10a6 6 0 0 1-6 6h-7a6 6 0 0 1-6-6v-10Z" fill="currentColor"/>
           <path d="M24 13h2.2a3.8 3.8 0 0 1 0 7.6H24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>

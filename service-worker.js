@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prasannaone-nonogram-shell-v20';
+const CACHE_NAME = 'prasannaone-nonogram-shell-v24';
 const APP_BASE = new URL('./', self.location.href);
 const APP_SHELL = [
   './',
@@ -15,7 +15,10 @@ const APP_SHELL = [
   './web-port/layout.js',
   './web-port/completion.js',
   './web-port/pointer-input.js',
-  './web-port/keyboard-input.js'
+  './web-port/keyboard-input.js',
+  './web-port/puzzle-preloader.js',
+  './web-port/puzzle-preload-core.js',
+  './web-port/puzzle-worker.js'
 ].map(path => new URL(path, APP_BASE).href);
 const INDEX_URL = new URL('./index.html', APP_BASE).href;
 
