@@ -118,6 +118,97 @@ function lineMasks(length, clues) {
 // Counts up to `limit`. Line placements are generated directly from run clues,
 // and column-prefix possibilities are indexed once. This avoids scanning every
 // 2^width row mask and allocating temporary arrays at every recursion node.
+/**
+ * Deterministic, deduction-only Nonogram solver.
+ * Cell state: -1 unknown, 0 empty, 1 filled. It never branches or guesses.
+ * A line's candidate placements are filtered by known cells; cells shared by
+ * every remaining placement become forced. Rows and columns repeat to a fixed
+ * point. A stalled board is explicitly not logically solvable.
+ */
+export function solveLogically(clues, height, width) {
+  const validClueLine = (line, lineLength) => Array.isArray(line) && line.length > 0 &&
+    line.every(n => Number.isInteger(n) && n >= 0 && n <= lineLength) &&
+    (line.length === 1 ? true : line.every(n => n > 0)) &&
+    (line.length === 1 && line[0] === 0 || line.length > 0 && line[0] > 0);
+  if (!Number.isInteger(height) || height < 1 || height > 12 ||
+      !Number.isInteger(width) || width < 1 || width > 12 ||
+      !clues || !Array.isArray(clues.rows) || !Array.isArray(clues.columns) ||
+      clues.rows.length !== height || clues.columns.length !== width ||
+      !clues.rows.every(line => validClueLine(line, width)) ||
+      !clues.columns.every(line => validClueLine(line, height))) {
+    return { status: 'invalid', solved: false, board: null, iterations: 0, deductions: 0 };
+  }
+
+  const board = Array.from({ length: height }, () => Array(width).fill(-1));
+  let iterations = 0, deductions = 0;
+  const applyLine = (isRow, index, clue) => {
+    const length = isRow ? width : height;
+    const candidates = lineMasks(length, clue).filter(mask => {
+      for (let offset = 0; offset < length; offset++) {
+        const known = isRow ? board[index][offset] : board[offset][index];
+        if (known !== -1 && Number(Boolean(mask & (1 << offset))) !== known) return false;
+      }
+      return true;
+    });
+    if (!candidates.length) return -1;
+    let changed = 0;
+    for (let offset = 0; offset < length; offset++) {
+      const bit = 1 << offset;
+      const first = Boolean(candidates[0] & bit);
+      if (!candidates.every(mask => Boolean(mask & bit) === first)) continue;
+      const value = first ? 1 : 0;
+      const current = isRow ? board[index][offset] : board[offset][index];
+      if (current === -1) {
+        if (isRow) board[index][offset] = value;
+        else board[offset][index] = value;
+        changed++; deductions++;
+      } else if (current !== value) return -1;
+    }
+    return changed;
+  };
+
+  while (true) {
+    iterations++;
+    let changed = 0;
+    for (let r = 0; r < height; r++) {
+      const result = applyLine(true, r, clues.rows[r]);
+      if (result < 0) return { status: 'contradiction', solved: false, board, iterations, deductions };
+      changed += result;
+    }
+    for (let c = 0; c < width; c++) {
+      const result = applyLine(false, c, clues.columns[c]);
+      if (result < 0) return { status: 'contradiction', solved: false, board, iterations, deductions };
+      changed += result;
+    }
+    // A later axis may invalidate a line processed earlier in this pass.
+    // Recheck every row and column before declaring the board solved or stalled.
+    const lineStillPossible = (isRow, index, clue) => {
+      const length = isRow ? width : height;
+      return lineMasks(length, clue).some(mask => {
+        for (let offset = 0; offset < length; offset++) {
+          const known = isRow ? board[index][offset] : board[offset][index];
+          if (known !== -1 && Number(Boolean(mask & (1 << offset))) !== known) return false;
+        }
+        return true;
+      });
+    };
+    if (clues.rows.some((clue, r) => !lineStillPossible(true, r, clue)) ||
+        clues.columns.some((clue, c) => !lineStillPossible(false, c, clue))) {
+      return { status: 'contradiction', solved: false, board, iterations, deductions };
+    }
+    if (board.every(row => row.every(cell => cell !== -1))) {
+      return { status: 'solved', solved: true, board: board.map(row => row.map(Boolean)), iterations, deductions };
+    }
+    if (changed === 0) {
+      return { status: 'stalled', solved: false, board, iterations, deductions };
+    }
+  }
+}
+
+export function isLogicallySolvable(clues, height, width) {
+  return solveLogically(clues, height, width).solved;
+}
+
 export function countSolutions(clues, height, width, limit = 2) {
   const validClueLine = (line, lineLength) => Array.isArray(line) && line.length > 0 &&
     line.every(n => Number.isInteger(n) && n >= 0 && n <= lineLength) &&
@@ -236,7 +327,7 @@ function hasUsefulVariety(solution, minimumRunCount = 12) {
     rowPatterns.size >= 3 && columnPatterns.size >= 3 && runCount >= minimumRunCount;
 }
 
-function generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoidFingerprints, exactAttempt = null, minimumRunCount = Math.min(12, size * 2) }) {
+function generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoidFingerprints, exactAttempt = null, allowLegacyRestore = false, diagnostics = null, minimumRunCount = Math.min(12, size * 2) }) {
   if (!Number.isSafeInteger(level) || level < 1 || level > 1_000_000) {
     throw new RangeError('Level must be a positive safe integer within the supported range.');
   }
@@ -255,6 +346,12 @@ function generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoi
   const rng = createRng(seed);
   const minDensity = 0.28;
   const maxDensity = 0.60;
+  const now = () => globalThis.performance?.now?.() ?? Date.now();
+  const validationMetrics = {
+    prefilterRejects: 0, logicalChecks: 0, logicalRejects: 0,
+    uniquenessChecks: 0, uniquenessRejects: 0,
+    totalLogicalMs: 0, totalUniquenessMs: 0, maxCandidateValidationMs: 0
+  };
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const density = minDensity + rng() * (maxDensity - minDensity);
@@ -264,11 +361,39 @@ function generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoi
     // Replay/resume pins the exact accepted PRNG attempt. Earlier attempts are
     // still consumed so the stream is identical, but they are not candidates.
     if (exactAttempt !== null && attempt !== exactAttempt) continue;
-    if (!hasFilledLine(solution) || !hasUsefulVariety(solution, minimumRunCount)) continue;
+    if (!hasFilledLine(solution) || !hasUsefulVariety(solution, minimumRunCount)) {
+      validationMetrics.prefilterRejects++;
+      continue;
+    }
     const fingerprint = puzzleFingerprint(solution);
-    if (recent.has(fingerprint)) continue;
+    if (recent.has(fingerprint)) {
+      validationMetrics.prefilterRejects++;
+      continue;
+    }
     const clues = calculateClues(solution);
-    if (countSolutions(clues, size, size, 2) === 1) {
+    // Run deterministic propagation first: it is cheap and rejects candidates
+    // that would require guessing before the more expensive uniqueness search.
+    // The opt-in exact-attempt fallback exists only to resume a puzzle already
+    // saved by older releases; it never applies to fresh puzzle generation.
+    const logicalStarted = now();
+    const logicallySolvable = isLogicallySolvable(clues, size, size);
+    const logicalMs = now() - logicalStarted;
+    validationMetrics.logicalChecks++;
+    validationMetrics.totalLogicalMs += logicalMs;
+    validationMetrics.maxCandidateValidationMs = Math.max(validationMetrics.maxCandidateValidationMs, logicalMs);
+    if (!logicallySolvable) validationMetrics.logicalRejects++;
+    if (!logicallySolvable && !(allowLegacyRestore && exactAttempt !== null)) continue;
+    const uniquenessStarted = now();
+    const uniqueSolutionCount = countSolutions(clues, size, size, 2);
+    const uniquenessMs = now() - uniquenessStarted;
+    validationMetrics.uniquenessChecks++;
+    validationMetrics.totalUniquenessMs += uniquenessMs;
+    validationMetrics.maxCandidateValidationMs = Math.max(validationMetrics.maxCandidateValidationMs, logicalMs + uniquenessMs);
+    if (uniqueSolutionCount === 1) {
+      if (diagnostics && typeof diagnostics === 'object') Object.assign(diagnostics, {
+        ...validationMetrics,
+        totalValidationMs: validationMetrics.totalLogicalMs + validationMetrics.totalUniquenessMs
+      });
       return {
         id: `${difficulty}-${level}-${typeof seed === 'string' ? seed : Number(seed) >>> 0}-${attempt}`,
         seed,
@@ -280,21 +405,23 @@ function generatePuzzleAtSize({ level, seed, size, difficulty, maxAttempts, avoi
         clues,
         solution,
         fingerprint,
-        attempts: attempt + 1
+        attempts: attempt + 1,
+        restoredLegacyUnsolvable: !logicallySolvable
       };
     }
+    validationMetrics.uniquenessRejects++;
   }
   throw new Error(`Could not generate a fresh unique ${difficulty} puzzle at ${size}x${size} after ${maxAttempts} attempts; try another seed or clear the recent-fingerprint window.`);
 }
 
-export function generatePuzzle({ difficulty = 'easy', level = 1, seed = Date.now(), journeySeed = null, size = null, maxAttempts = 500, avoidFingerprints = [], exactAttempt = null } = {}) {
+export function generatePuzzle({ difficulty = 'easy', level = 1, seed = Date.now(), journeySeed = null, size = null, maxAttempts = 500, avoidFingerprints = [], exactAttempt = null, allowLegacyRestore = false, diagnostics = null } = {}) {
   if (!DIFFICULTIES.includes(difficulty)) throw new RangeError('Difficulty must be easy, normal, or hard.');
   if (journeySeed !== null && !isValidSeed(journeySeed)) throw new TypeError('journeySeed must be a valid saved seed.');
   const selectedSize = size === null ? getGridSizeForLevel(level, difficulty, journeySeed) : size;
   if (!DIFFICULTY_GRID_SIZES[difficulty].includes(selectedSize)) {
     throw new RangeError(`Grid size ${selectedSize} is not available in ${difficulty} mode.`);
   }
-  return generatePuzzleAtSize({ level, seed, size: selectedSize, difficulty, maxAttempts, avoidFingerprints, exactAttempt });
+  return generatePuzzleAtSize({ level, seed, size: selectedSize, difficulty, maxAttempts, avoidFingerprints, exactAttempt, allowLegacyRestore, diagnostics });
 }
 
 
@@ -304,9 +431,9 @@ export function generateEasyPuzzle(options = {}) {
 }
 
 /** Legacy generation is used only to resume a v4 Easy save's unfinished puzzle. */
-export function generateLegacyEasyPuzzle({ level = 1, seed = Date.now(), size: savedSize = null, maxAttempts = 500, avoidFingerprints = [], exactAttempt = null } = {}) {
+export function generateLegacyEasyPuzzle({ level = 1, seed = Date.now(), size: savedSize = null, maxAttempts = 500, avoidFingerprints = [], exactAttempt = null, allowLegacyRestore = false, diagnostics = null } = {}) {
   const size = savedSize === null ? getLegacyEasyGridSizeForLevel(level) : savedSize;
-  return generatePuzzleAtSize({ level, seed, size, difficulty: 'easy', maxAttempts, avoidFingerprints, exactAttempt, minimumRunCount: 12 });
+  return generatePuzzleAtSize({ level, seed, size, difficulty: 'easy', maxAttempts, avoidFingerprints, exactAttempt, allowLegacyRestore, diagnostics, minimumRunCount: 12 });
 }
 
 export function isSolved(current, solution) {

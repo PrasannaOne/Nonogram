@@ -11,9 +11,9 @@ export function calculateBoardLayout({ width, height, size, maxRowClueChars = 1,
 
   const clueFontSize = Math.max(9, Math.min(14, width * 0.034, height * 0.03));
   const rowClueWidth = Math.ceil(Math.max(27,
-    maxRowClueChars * clueFontSize * 0.58 + 10));
-  const columnClueHeight = Math.ceil(Math.max(32,
-    maxColumnClues * clueFontSize * 1.08 + 8));
+    maxRowClueChars * clueFontSize * 0.61 + 12));
+  const columnClueHeight = Math.ceil(Math.max(34,
+    maxColumnClues * clueFontSize * 1.2 + 10));
   const cellSize = Math.max(1, Math.floor(Math.min(
     (width - rowClueWidth) / size,
     (height - columnClueHeight) / size,

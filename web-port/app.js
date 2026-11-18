@@ -1,16 +1,22 @@
 
 import { generatePuzzle, generateLegacyEasyPuzzle } from './nonogram.js';
 import { PuzzleBoard, CELL, TOOL, getCompletedLines, getNewlyCompletedLines, isBoardComplete } from './interaction.js';
-import { createGameRepository, updateModeProgress, selectGameMode, completeLevel, setCurrentPuzzle, getSavedPuzzle, spendHintPoints, getHintCost, GAME_MODES } from './progress.js';
+import { createGameRepository, updateModeProgress, selectGameMode, completeLevel, setCurrentPuzzle, getSavedPuzzle, spendHintPoints, getHintCost, GAME_MODES, RECENT_FINGERPRINT_LIMIT } from './progress.js';
 import { getCellCoordinatesAtPoint, createAxisLockedStroke, getAxisLockedCell } from './pointer-input.js';
 import { getKeyboardCellTarget } from './keyboard-input.js';
 import { createSafeStorage } from './storage.js';
 import { calculateBoardLayout } from './layout.js';
-import { formatElapsedTime, restoreLevelStartTime } from './completion.js';
+import { formatElapsedTime, restoreLevelStartTime, shouldShowKofiPrompt } from './completion.js';
+import { createPreloadPlan, createPuzzlePreloader } from './puzzle-preloader.js';
 
 const $ = (id) => document.getElementById(id);
 const storage = createSafeStorage(window);
 const repository = createGameRepository(storage);
+const puzzlePreloader = createPuzzlePreloader(() =>
+  typeof Worker === 'function'
+    ? new Worker(new URL('./puzzle-worker.js', import.meta.url), { type: 'module', name: 'nonogram-next-puzzle' })
+    : null
+);
 let gameState = repository.load();
 let activeMode = gameState.currentMode;
 let progress = gameState.profiles[activeMode];
@@ -19,6 +25,7 @@ let lastHint = null, hintedCells = new Set(), storageWarning = false, focusedCel
 let levelStartedAtMs = Date.now(), completedLevelNumber = null, activePuzzleSeed = null;
 let activeUsesLegacyGenerator = false, completedPuzzleForReplay = null;
 let previousCompletedLines = { rows: [], columns: [] };
+let preloadScheduleToken = 0;
 const THEME_KEY = 'prasannaone.nonogram.theme.v1';
 const THEMES = Object.freeze({
   lavender: '#f7f4fb', ocean: '#f0f8fc', rose: '#fff4f6',
@@ -45,7 +52,37 @@ function seedFor(level, mode = activeMode, legacy = false) {
   if (legacy && mode === 'easy') return (0x51f15e + Math.imul(level, 0x9e3779b1)) >>> 0;
   return `${progress.journeySeed}:puzzle:${mode}:${level}`;
 }
-function newBoardFor(level, savedPuzzle = null, legacyOverride = null) {
+function buildPreloadPlan(level, recentFingerprints = progress.recentFingerprints) {
+  return createPreloadPlan({
+    level,
+    difficulty: activeMode,
+    journeySeed: progress.journeySeed,
+    recentFingerprints
+  });
+}
+function getPostCompletionFingerprints() {
+  const recent = Array.isArray(progress.recentFingerprints) ? progress.recentFingerprints : [];
+  if (!puzzle?.fingerprint || recent.includes(puzzle.fingerprint)) return recent.slice(-RECENT_FINGERPRINT_LIMIT);
+  return [...recent, puzzle.fingerprint].slice(-RECENT_FINGERPRINT_LIMIT);
+}
+function scheduleNextLevelPreload() {
+  if (!puzzle || !progress.journeySeed) return;
+  // During normal play currentLevel equals puzzle.level. During a replay,
+  // currentLevel already points at the next uncompleted level.
+  const nextLevel = progress.currentLevel > puzzle.level ? progress.currentLevel : puzzle.level + 1;
+  if (nextLevel > 1_000_000) return;
+  let plan;
+  try { plan = buildPreloadPlan(nextLevel, getPostCompletionFingerprints()); }
+  catch (error) { console.warn('Next puzzle could not be queued:', error); return; }
+  // Give the current board two paint frames before spinning up the worker. A
+  // token prevents an old frame callback from queueing a stale level/mode.
+  const token = ++preloadScheduleToken;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (token === preloadScheduleToken) puzzlePreloader.request(plan);
+  }));
+}
+
+function newBoardFor(level, savedPuzzle = null, legacyOverride = null, preloaded = null) {
   const legacy = typeof legacyOverride === 'boolean' ? legacyOverride
     : typeof savedPuzzle?.legacy === 'boolean' ? savedPuzzle.legacy
     : (activeMode === 'easy' && progress.generatorVersion === 1);
@@ -56,15 +93,39 @@ function newBoardFor(level, savedPuzzle = null, legacyOverride = null) {
   // Old snapshots have no attempt index, so keep the original repeat-filter
   // history. New snapshots pin the exact accepted attempt and can ignore it.
   const avoidFingerprints = exactAttempt === null ? progress.recentFingerprints : [];
-  const options = { level, seed, avoidFingerprints, exactAttempt };
-  const generated = legacy
-    ? generateLegacyEasyPuzzle({ ...options, size: savedPuzzle?.width ?? null })
-    : generatePuzzle({ ...options, difficulty: activeMode, journeySeed: progress.journeySeed, size: savedPuzzle?.width ?? null });
+  const options = { level, seed, avoidFingerprints, exactAttempt, allowLegacyRestore: Boolean(savedPuzzle) };
+  const generate = input => legacy
+    ? generateLegacyEasyPuzzle({ ...input, size: savedPuzzle?.width ?? null })
+    : generatePuzzle({ ...input, difficulty: activeMode, journeySeed: progress.journeySeed, size: savedPuzzle?.width ?? null });
+  let generated, actualSeed = seed;
+  if (!savedPuzzle && !legacy && preloaded?.generated?.level === level &&
+      (preloaded.seed === seed || preloaded.seed === `${seed}:retry1`) &&
+      preloaded.generated.difficulty === activeMode &&
+      preloaded.generated.seed === preloaded.seed) {
+    // Worker results come from the same strict generator and are keyed to the
+    // exact future recent-fingerprint window. Any mismatch falls back below.
+    generated = preloaded.generated;
+    actualSeed = preloaded.seed;
+  }
+  try {
+    if (!generated) generated = generate(options);
+  } catch (firstError) {
+    // Never substitute a different puzzle for a saved in-flight board. For a
+    // brand-new level only, make one bounded deterministic retry with a fresh
+    // seed and a larger cap; the actual seed is persisted for exact resume.
+    if (savedPuzzle) throw firstError;
+    actualSeed = typeof seed === 'string' ? `${seed}:retry1` : `nonogram-retry:${seed >>> 0}:${level}`;
+    try {
+      generated = generate({ ...options, seed: actualSeed, maxAttempts: 1000 });
+    } catch (retryError) {
+      throw new Error(`Unable to create a validated puzzle for level ${level}. Please retry the level. ${retryError.message}`, { cause: firstError });
+    }
+  }
   if (savedPuzzle?.fingerprint && generated.fingerprint !== savedPuzzle.fingerprint) {
     throw new Error('Saved puzzle fingerprint mismatch; refusing to load a different puzzle under the same progress record.');
   }
   const model = new PuzzleBoard(generated.height, generated.width);
-  return { generated, model, seed, legacy };
+  return { generated, model, seed: actualSeed, legacy };
 }
 function loadLevel(level, options = {}) {
   const replaySpec = options.replaySpec || null;
@@ -72,7 +133,12 @@ function loadLevel(level, options = {}) {
     ? { seed: replaySpec.seed, width: replaySpec.width, height: replaySpec.height, attempts: replaySpec.attempts, fingerprint: replaySpec.fingerprint, legacy: replaySpec.legacy, board: null, hintedCells: [] }
     : getSavedPuzzle(progress, level);
   progress = ensureJourneySeed(progress);
-  const made = newBoardFor(level, savedPuzzle, replaySpec ? replaySpec.legacy : null);
+  let preloaded = null;
+  if (!savedPuzzle && !replaySpec) {
+    try { preloaded = puzzlePreloader.take(buildPreloadPlan(level).key); }
+    catch { /* malformed or unavailable preload metadata uses normal generation */ }
+  }
+  const made = newBoardFor(level, savedPuzzle, replaySpec ? replaySpec.legacy : null, preloaded);
   puzzle = made.generated; board = made.model; activePuzzleSeed = made.seed;
   activeUsesLegacyGenerator = made.legacy;
   completed = false; lastHint = null; focusedCell = { row: 0, col: 0 };
@@ -87,6 +153,7 @@ function loadLevel(level, options = {}) {
   progress = setCurrentPuzzle(progress, { level, seed: activePuzzleSeed, width: puzzle.width, height: puzzle.height, startedAtMs: levelStartedAtMs, attempts: puzzle.attempts, fingerprint: puzzle.fingerprint, legacy: activeUsesLegacyGenerator }, board.snapshot());
   previousCompletedLines = getCompletedLines(board, puzzle.solution);
   save(); render();
+  scheduleNextLevelPreload();
 }
 function persist() {
   try {
@@ -185,7 +252,7 @@ function render() {
       // Native keyboard activation produces click without a preceding pointerdown.
       if (event.detail !== 0 || completed) return;
       board.applyCell(r, c, activeTool);
-      refreshCell(r, c); refreshLineMarks({ row: r, col: c }); save(); checkComplete();
+      refreshCell(r, c); refreshLineMarks(); save(); checkComplete();
     });
     cells.append(cell);
   }
@@ -238,19 +305,66 @@ function restartAnimations(nodes, className) {
     for (const node of nodes) node.classList.add(className);
   });
 }
-function animateCompletionCell(changedCell, newlyDone) {
-  if (!changedCell || board.getState(changedCell.row, changedCell.col) !== CELL.FILLED) return;
-  const lineWasCompleted = newlyDone.rows.includes(changedCell.row) || newlyDone.columns.includes(changedCell.col);
-  if (!lineWasCompleted) return;
-  const cell = $('board').querySelector(`[data-row="${changedCell.row}"][data-col="${changedCell.col}"]`);
-  if (cell) restartAnimations([cell], 'line-completing');
+function animateCompletedLines(newlyDone) {
+  const rows = newlyDone.rows;
+  const columns = newlyDone.columns;
+  if (!rows.length && !columns.length) return;
+
+  // Highlight only the exact rows/columns that changed from incomplete to
+  // complete. The rest of the board remains completely still.
+  const cells = [];
+  for (const row of rows) {
+    for (let col = 0; col < puzzle.width; col++) {
+      const cell = $('board').querySelector(`[data-row="${row}"][data-col="${col}"]`);
+      if (cell) cells.push(cell);
+    }
+  }
+  for (const col of columns) {
+    for (let row = 0; row < puzzle.height; row++) {
+      const cell = $('board').querySelector(`[data-row="${row}"][data-col="${col}"]`);
+      if (cell) cells.push(cell);
+    }
+  }
+  restartAnimations([...new Set(cells)], 'line-completing');
+
+  const descriptions = [
+    ...(rows.length ? [`${rows.length === 1 ? 'Row' : `${rows.length} rows`} complete`] : []),
+    ...(columns.length ? [`${columns.length === 1 ? 'Column' : `${columns.length} columns`} complete`] : [])
+  ];
+  announceStatus(descriptions.join('. '));
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+  // A small, short-lived label sits exactly on the completed line (or at the
+  // crossing when a row and column finish together), rather than covering the
+  // whole game with a generic toast.
+  const root = $('board');
+  const cellsLayer = root.querySelector('.cells');
+  if (!cellsLayer) return;
+  const styles = getComputedStyle(root);
+  const cellSize = parseFloat(styles.getPropertyValue('--cell-size')) || 0;
+  const rowClueWidth = parseFloat(styles.getPropertyValue('--row-clue-width')) || 0;
+  const columnClueHeight = parseFloat(styles.getPropertyValue('--column-clue-height')) || 0;
+  const rowCenter = rows.length ? rows.reduce((sum, value) => sum + value + .5, 0) / rows.length : puzzle.height / 2;
+  const columnCenter = columns.length ? columns.reduce((sum, value) => sum + value + .5, 0) / columns.length : puzzle.width / 2;
+  const label = rows.length && columns.length
+    ? 'ROW + COLUMN COMPLETE'
+    : rows.length > 1 ? `${rows.length} ROWS COMPLETE`
+      : columns.length > 1 ? `${columns.length} COLUMNS COMPLETE`
+        : rows.length ? 'ROW COMPLETE' : 'COLUMN COMPLETE';
+  root.querySelectorAll('.line-completion-toast').forEach(node => node.remove());
+  const toast = make('div', 'line-completion-toast', label);
+  toast.setAttribute('aria-hidden', 'true');
+  toast.style.left = `${rowClueWidth + columnCenter * cellSize}px`;
+  toast.style.top = `${columnClueHeight + rowCenter * cellSize}px`;
+  root.append(toast);
 }
 $('board').addEventListener('animationend', event => {
   if (event.animationName === 'lineCellComplete') event.target.classList.remove('line-completing');
   else if (event.animationName === 'lineClueComplete') event.target.classList.remove('just-completed');
+  else if (event.animationName === 'lineToastPop') event.target.remove();
 });
 
-function refreshLineMarks(changedCell = null) {
+function refreshLineMarks() {
   const done = getCompletedLines(board, puzzle.solution);
   const newlyDone = getNewlyCompletedLines(previousCompletedLines, done);
   const newlyCompletedClues = [];
@@ -273,12 +387,12 @@ function refreshLineMarks(changedCell = null) {
   $('hintButton').disabled = !hasHintCandidate();
   previousCompletedLines = done;
   restartAnimations(newlyCompletedClues, 'just-completed');
-  animateCompletionCell(changedCell, newlyDone);
+  animateCompletedLines(newlyDone);
 }
 function paintCellAt(row, col) {
   if (board.paintCell(row, col)) {
     refreshCell(row, col);
-    refreshLineMarks({ row, col });
+    refreshLineMarks();
   }
 }
 function onCellDown(event) {
@@ -351,27 +465,34 @@ function checkComplete() {
   completedPuzzleForReplay = { level: finishedLevel, seed: activePuzzleSeed, width: puzzle.width, height: puzzle.height, attempts: puzzle.attempts, fingerprint: puzzle.fingerprint, legacy: activeUsesLegacyGenerator };
   const elapsedMs = Math.max(0, Date.now() - levelStartedAtMs);
   const pointsBefore = progress.points;
+  const firstTimeCompletingLevel = finishedLevel > progress.completedThrough &&
+    !progress.completedLevels.includes(finishedLevel);
   progress = completeLevel(progress, finishedLevel, puzzle.fingerprint, puzzle.points);
   const pointsEarned = Math.max(0, progress.points - pointsBefore);
   persist();
   $('completionTitle').textContent = `Level ${finishedLevel} accomplished!`;
   $('completionTime').textContent = formatElapsedTime(elapsedMs);
   $('completionPoints').textContent = String(pointsEarned);
+  $('completionKofi').hidden = !(firstTimeCompletingLevel && shouldShowKofiPrompt(finishedLevel, progress.journeySeed));
   announceStatus(`Level ${finishedLevel} complete. Time ${formatElapsedTime(elapsedMs)}. ${pointsEarned} points earned.`);
   $('clearBoardButton').disabled = true;
   $('undoButton').disabled = true;
   $('hintButton').disabled = true;
-  // Let the final cell/clue paint before presenting the summary. Two animation
-  // frames give a short, consistent delay without a fixed wall-clock timer.
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  // Let the final row/column popup finish before covering it with the full
+  // level summary. Ordinary completions still need only two paint frames.
+  const presentSummary = () => requestAnimationFrame(() => requestAnimationFrame(() => {
     if (completed && completedLevelNumber === finishedLevel && !$('completionDialog').open) {
       openDialog($('completionDialog'));
     }
   }));
+  if ($('board').querySelector('.line-completion-toast')) window.setTimeout(presentSummary, 640);
+  else presentSummary();
 }
 function hasHintCandidate() { return puzzle.solution.some((row,r)=>row.some((v,c)=>v && board.getState(r,c)!==CELL.FILLED)); }
 function switchDifficulty(nextMode) {
   if (!GAME_MODES.includes(nextMode) || nextMode === activeMode) return;
+  preloadScheduleToken++;
+  puzzlePreloader.invalidate();
   if (pointerDown) finishStroke();
   persist();
   gameState = selectGameMode(gameState, nextMode);
@@ -476,6 +597,7 @@ $('hintButton').addEventListener('click',()=>{
 });
 try { loadLevel(progress.currentLevel || 1); }
 catch(error) { console.error(error); announceStatus('Could not create this puzzle. Reload to try again.'); }
+window.addEventListener('pagehide', () => puzzlePreloader.dispose(), { once: true });
 
 
 // GitHub Pages is served over HTTPS, so the app can install its offline shell.

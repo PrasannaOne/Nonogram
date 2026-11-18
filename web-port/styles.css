@@ -131,13 +131,13 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 .hint-button svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .hint-button:active { transform: scale(.96); }
 .hint-button:disabled { opacity: .35; cursor: default; }
-.board-wrap { flex: 1 1 auto; min-width: 0; min-height: 0; width: 100%; display: grid; place-items: center; overflow: hidden; container-type: size; padding-bottom: clamp(14px, 3.2vh, 34px); }
+.board-wrap { flex: 1 1 auto; min-width: 0; min-height: 0; width: 100%; display: grid; place-items: center; align-content: center; justify-content: center; overflow: hidden; container-type: size; padding: 0; }
 .board {
   --n: 5; --cell-size: 32px; --row-clue-width: 38px; --column-clue-height: 42px; --clue-font-size: 11px; --grid-stroke: clamp(2.5px, .62vw, 4px);
   display: grid; grid-template-columns: var(--row-clue-width) repeat(var(--n), var(--cell-size));
   grid-template-rows: var(--column-clue-height) repeat(var(--n), var(--cell-size));
   width: calc(var(--row-clue-width) + var(--n) * var(--cell-size)); height: calc(var(--column-clue-height) + var(--n) * var(--cell-size));
-  max-width: 100%; max-height: 100%; gap: 0; touch-action: none; user-select: none; -webkit-user-select: none;
+  position: relative; max-width: 100%; max-height: 100%; gap: 0; touch-action: none; user-select: none; -webkit-user-select: none;
   transform-origin: center; transition: filter .2s ease;
 }
 .corner { grid-column: 1; grid-row: 1; }
@@ -145,10 +145,10 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 .row-clues { display: grid; grid-template-rows: repeat(var(--n), var(--cell-size)); grid-column: 1; grid-row: 2; align-items: center; }
 .clue {
   min-width: 0; display: flex; justify-content: center; align-items: center; gap: 1px; overflow: hidden;
-  color: color-mix(in srgb, var(--muted) 70%, var(--bg)); font-size: var(--clue-font-size); font-weight: 400; line-height: 1.05; font-variant-numeric: tabular-nums;
+  color: var(--muted-strong); font-size: var(--clue-font-size); font-weight: 520; line-height: 1.16; letter-spacing: .005em; font-variant-numeric: tabular-nums;
 }
-.column-clue { flex-direction: column; padding-bottom: 4px; }
-.row-clue { justify-content: flex-end; padding-right: 6px; white-space: nowrap; }
+.column-clue { flex-direction: column; gap: 2px; padding-bottom: 3px; }
+.row-clue { justify-content: flex-end; gap: 3px; padding-right: 6px; white-space: nowrap; }
 .clue.done { color: var(--muted); opacity: .64; text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .clue { transition: color .16s ease, opacity .16s ease; }
 .clue.just-completed { animation: lineClueComplete .16s ease-out both; }
@@ -170,9 +170,28 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
    avoids relying on an overlay pseudo-element in mobile browser compositors. */
 .cell[data-row="0"] { border-top: var(--grid-stroke) solid var(--grid-strong); }
 .cell[data-col="0"] { border-left: var(--grid-stroke) solid var(--grid-strong); }
-.cell.filled { background: var(--accent); box-shadow: none; }
-.cell.line-completing { z-index: 1; animation: lineCellComplete .14s ease-out both; }
-@keyframes lineCellComplete { from { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-strong) 58%, transparent); } to { box-shadow: none; } }
+.cell.filled { background: color-mix(in srgb, var(--accent) 68%, var(--surface)); box-shadow: none; }
+.cell.line-completing { z-index: 1; animation: lineCellComplete .42s cubic-bezier(.2,.75,.25,1) both; }
+@keyframes lineCellComplete {
+  0% { box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--accent-strong) 0%, transparent); }
+  30% { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent-strong) 30%, transparent); }
+  100% { box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--accent-strong) 0%, transparent); }
+}
+.line-completion-toast {
+  position: absolute; z-index: 5; pointer-events: none; white-space: nowrap;
+  padding: 6px 9px; border: 1px solid color-mix(in srgb, var(--accent-strong) 18%, var(--glass-border));
+  border-radius: 999px; background: color-mix(in srgb, var(--surface-raised) 97%, var(--accent));
+  color: var(--muted-strong); box-shadow: 0 3px 10px rgba(40, 48, 70, .075), inset 0 1px 0 rgba(255,255,255,.68);
+  font-size: 8px; font-weight: 650; letter-spacing: .055em; line-height: 1;
+  transform: translate(-50%, -50%); animation: lineToastPop .64s cubic-bezier(.18,.75,.25,1) both;
+}
+@keyframes lineToastPop {
+  0% { opacity: 0; transform: translate(-50%, -46%) scale(.96); }
+  22% { opacity: .94; transform: translate(-50%, -51%) scale(1.01); }
+  38% { opacity: .92; transform: translate(-50%, -50%) scale(1); }
+  78% { opacity: .92; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -54%) scale(.99); }
+}
 @media (hover: hover) { .cell:hover { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-strong) 38%, transparent); } }
 .cell.crossed::before, .cell.crossed::after {
   content: ""; position: absolute; width: 62%; height: clamp(3px, 7%, 7px); border-radius: 999px; background: var(--cross);
@@ -190,18 +209,18 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 }
 .tool-button {
   width: min(136px, 100%); aspect-ratio: 1; min-width: 0; max-width: 136px; display: grid; place-items: center;
-  border: 1px solid var(--glass-border); border-radius: 50%; background: var(--glass); color: var(--muted);
-  cursor: pointer; touch-action: manipulation; box-shadow: 0 12px 28px rgba(50,55,80,.10), inset 0 1px 0 rgba(255,255,255,.72);
+  border: 1px solid var(--glass-border); border-radius: 50%; background: color-mix(in srgb, var(--surface) 76%, transparent); color: var(--muted-strong);
+  cursor: pointer; touch-action: manipulation; box-shadow: 0 9px 22px rgba(50,55,80,.075), inset 0 1px 0 rgba(255,255,255,.72);
   backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
   transition: background-color .15s ease, color .15s ease, transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .16s ease;
 }
 .tool-button span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .tool-button svg { width: 56%; height: 56%; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.tool-button.active { border-color: color-mix(in srgb, var(--accent-strong) 20%, white); background: color-mix(in srgb, var(--accent) 82%, white); color: var(--accent-ink); box-shadow: 0 9px 24px color-mix(in srgb, var(--accent-strong) 18%, transparent), inset 0 1px 0 rgba(255,255,255,.7); }
+.tool-button.active { border-color: color-mix(in srgb, var(--accent-strong) 12%, var(--glass-border)); background: color-mix(in srgb, var(--accent) 42%, var(--surface)); color: var(--accent-ink); box-shadow: 0 7px 18px color-mix(in srgb, var(--accent-strong) 9%, transparent), inset 0 1px 0 rgba(255,255,255,.72); }
 .tool-button:active:not(:disabled) { transform: scale(.92); box-shadow: inset 0 2px 7px rgba(40,45,65,.12); }
 .tool-button:disabled { opacity: .42; cursor: default; }
-#undoButton { background: color-mix(in srgb, var(--muted) 66%, var(--surface)); color: #f7f7f5; }
-#undoButton:disabled { opacity: .82; }
+#undoButton { background: color-mix(in srgb, var(--surface-soft) 68%, var(--surface)); color: var(--muted-strong); }
+#undoButton:disabled { opacity: .72; }
 [data-tool="fill"] svg { fill: currentColor; stroke: none; }
 [data-tool="cross"] svg { stroke-width: 2.7; }
 .dialog {
@@ -286,15 +305,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
   .toolbar { grid-column: 2; grid-row: 2; min-height: 0; height: 100%; flex: none; grid-template-columns: 1fr; grid-template-rows: repeat(3,minmax(0,1fr)); gap: 4px; padding: 3px 0 max(3px, env(safe-area-inset-bottom)); border: 0; }
   .tool-button { width: min(58px, 14vh); min-height: 0; }
 }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-  .board.board-complete, .cell.line-completing, .clue.just-completed { animation: none !important; }
-}
-
 @media (max-height: 700px) {
   .toolbar { min-height: calc(124px + env(safe-area-inset-bottom)); flex-basis: calc(124px + env(safe-area-inset-bottom)); }
   .tool-button { width: min(112px, 100%); max-width: 112px; }
-  .board-wrap { padding-bottom: 8px; }
 }
 
 
@@ -306,11 +319,6 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
   }
   .cell { transition: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; }
-}
-
-
 /* Completion dialog: plain stats, three clear choices, readable in every palette. */
 .completion-dialog {
   width: min(calc(100vw - 28px), 448px);
@@ -323,8 +331,16 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.completion-dialog[open] { animation: completionEnter .16s ease-out both; }
-@keyframes completionEnter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.completion-dialog[open] { animation: completionEnter .24s cubic-bezier(.2,.8,.25,1) both; }
+@keyframes completionEnter { from { opacity: 0; transform: translateY(9px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.completion-mark {
+  width: 48px; height: 48px; margin: 0 auto 16px; display: grid; place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 35%, transparent); border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 58%, var(--surface-raised)); color: var(--accent-ink);
+  font-size: 25px; font-weight: 700; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-strong) 14%, transparent);
+  animation: completionMarkPop .38s cubic-bezier(.18,.8,.25,1) .06s both;
+}
+@keyframes completionMarkPop { from { opacity: 0; transform: scale(.72); } 72% { opacity: 1; transform: scale(1.06); } to { opacity: 1; transform: scale(1); } }
 .completion-dialog::backdrop {
   background: rgba(15, 18, 28, .54);
   backdrop-filter: blur(2px);
@@ -361,6 +377,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
 .completion-next { background: var(--accent); color: #172436; }
 .completion-replay { background: var(--surface-raised); border-color: var(--border); color: var(--ink); }
 .completion-kofi { background: var(--good); border-color: var(--accent-strong); color: var(--accent-ink); }
+.completion-kofi[hidden] { display: none !important; }
 .completion-kofi svg { width: 27px; height: 27px; flex: 0 0 27px; }
 .completion-action:focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 3px; }
 .completion-action:active { transform: scale(.985); }
@@ -381,5 +398,6 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong);
   .completion-actions { gap: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .completion-action, .completion-dialog[open] { transition: none; animation: none; }
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .cell.line-completing, .clue.just-completed, .line-completion-toast, .completion-dialog[open], .completion-mark, .completion-action { animation: none !important; transition: none !important; }
 }

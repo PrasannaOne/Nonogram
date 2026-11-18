@@ -19,3 +19,21 @@ export function restoreLevelStartTime(savedPuzzle, now = Date.now()) {
   }
   return now;
 }
+
+
+/**
+ * First support prompt appears after level five. Later prompts are spaced by
+ * deterministic pseudo-random intervals of four to eight completed levels,
+ * keyed to the player's persistent journey seed.
+ */
+export function shouldShowKofiPrompt(level, journeySeed) {
+  if (!Number.isSafeInteger(level) || level < 5 || typeof journeySeed !== 'string' || journeySeed.length < 8) return false;
+  let state = 2166136261;
+  for (let i = 0; i < journeySeed.length; i++) state = Math.imul(state ^ journeySeed.charCodeAt(i), 16777619) >>> 0;
+  let next = 5;
+  while (next < level) {
+    state ^= state << 13; state ^= state >>> 17; state ^= state << 5;
+    next += 4 + ((state >>> 0) % 5);
+  }
+  return next === level;
+}
