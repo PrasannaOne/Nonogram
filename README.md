@@ -6,7 +6,7 @@
   <a href="https://prasannaone.github.io/Nonogram/"><img src="https://img.shields.io/badge/▶_PLAY_NOW-PLAY_NONOGRAM-7189b8?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Play Nonogram" /></a>
 </p>
 
-**[Play Nonogram](https://prasannaone.github.io/Nonogram/)** · **[Source repository](https://github.com/PrasannaOne/Nonogram)**
+**[Play Nonogram](https://prasannaone.github.io/Nonogram/)**
 
 <p>
   <img src="https://img.shields.io/badge/Release-v56-7189b8?style=flat-square" alt="v56" />
