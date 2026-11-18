@@ -334,24 +334,20 @@ function animateCompletedLines(newlyDone) {
 
 $('board').addEventListener('animationend', event => {
   if (event.animationName === 'lineCellComplete') event.target.classList.remove('line-completing');
-  else if (event.animationName === 'lineClueComplete') event.target.classList.remove('just-completed');
 });
 
 function refreshLineMarks() {
   const done = getCompletedLines(board, puzzle.solution);
   const newlyDone = getNewlyCompletedLines(previousCompletedLines, done);
-  const newlyCompletedClues = [];
   $('board').querySelectorAll('.row-clue').forEach((node, i) => {
     const isDone = done.rows.includes(i);
     node.classList.toggle('done', isDone);
-    if (newlyDone.rows.includes(i)) newlyCompletedClues.push(node);
     const clue = puzzle.clues.rows[i];
     node.setAttribute('aria-label', `Row ${i + 1} clue: ${clue[0] === 0 ? 'no filled cells' : clue.join(', ')}${isDone ? ', complete' : ''}`);
   });
   $('board').querySelectorAll('.column-clue').forEach((node, i) => {
     const isDone = done.columns.includes(i);
     node.classList.toggle('done', isDone);
-    if (newlyDone.columns.includes(i)) newlyCompletedClues.push(node);
     const clue = puzzle.clues.columns[i];
     node.setAttribute('aria-label', `Column ${i + 1} clue: ${clue[0] === 0 ? 'no filled cells' : clue.join(', ')}${isDone ? ', complete' : ''}`);
   });
@@ -359,7 +355,6 @@ function refreshLineMarks() {
   $('clearBoardButton').disabled = !board.snapshot().some(row => row.some(state => state !== CELL.UNKNOWN));
   $('hintButton').disabled = !hasHintCandidate();
   previousCompletedLines = done;
-  restartAnimations(newlyCompletedClues, 'just-completed');
   animateCompletedLines(newlyDone);
 }
 function paintCellAt(row, col) {
