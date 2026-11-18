@@ -310,8 +310,8 @@ function animateCompletedLines(newlyDone) {
   const columns = newlyDone.columns;
   if (!rows.length && !columns.length) return;
 
-  // Highlight only the exact rows/columns that changed from incomplete to
-  // complete. The rest of the board remains completely still.
+  // Briefly wash only the cells belonging to newly completed lines. No
+  // labels, badges or floating toast: the board itself gives the feedback.
   const cells = [];
   for (const row of rows) {
     for (let col = 0; col < puzzle.width; col++) {
@@ -325,43 +325,16 @@ function animateCompletedLines(newlyDone) {
       if (cell) cells.push(cell);
     }
   }
-  restartAnimations([...new Set(cells)], 'line-completing');
-
-  const descriptions = [
+  announceStatus([
     ...(rows.length ? [`${rows.length === 1 ? 'Row' : `${rows.length} rows`} complete`] : []),
     ...(columns.length ? [`${columns.length === 1 ? 'Column' : `${columns.length} columns`} complete`] : [])
-  ];
-  announceStatus(descriptions.join('. '));
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-
-  // A small, short-lived label sits exactly on the completed line (or at the
-  // crossing when a row and column finish together), rather than covering the
-  // whole game with a generic toast.
-  const root = $('board');
-  const cellsLayer = root.querySelector('.cells');
-  if (!cellsLayer) return;
-  const styles = getComputedStyle(root);
-  const cellSize = parseFloat(styles.getPropertyValue('--cell-size')) || 0;
-  const rowClueWidth = parseFloat(styles.getPropertyValue('--row-clue-width')) || 0;
-  const columnClueHeight = parseFloat(styles.getPropertyValue('--column-clue-height')) || 0;
-  const rowCenter = rows.length ? rows.reduce((sum, value) => sum + value + .5, 0) / rows.length : puzzle.height / 2;
-  const columnCenter = columns.length ? columns.reduce((sum, value) => sum + value + .5, 0) / columns.length : puzzle.width / 2;
-  const label = rows.length && columns.length
-    ? 'ROW + COLUMN COMPLETE'
-    : rows.length > 1 ? `${rows.length} ROWS COMPLETE`
-      : columns.length > 1 ? `${columns.length} COLUMNS COMPLETE`
-        : rows.length ? 'ROW COMPLETE' : 'COLUMN COMPLETE';
-  root.querySelectorAll('.line-completion-toast').forEach(node => node.remove());
-  const toast = make('div', 'line-completion-toast', label);
-  toast.setAttribute('aria-hidden', 'true');
-  toast.style.left = `${rowClueWidth + columnCenter * cellSize}px`;
-  toast.style.top = `${columnClueHeight + rowCenter * cellSize}px`;
-  root.append(toast);
+  ].join('. '));
+  restartAnimations([...new Set(cells)], 'line-completing');
 }
+
 $('board').addEventListener('animationend', event => {
   if (event.animationName === 'lineCellComplete') event.target.classList.remove('line-completing');
   else if (event.animationName === 'lineClueComplete') event.target.classList.remove('just-completed');
-  else if (event.animationName === 'lineToastPop') event.target.remove();
 });
 
 function refreshLineMarks() {
@@ -478,15 +451,13 @@ function checkComplete() {
   $('clearBoardButton').disabled = true;
   $('undoButton').disabled = true;
   $('hintButton').disabled = true;
-  // Let the final row/column popup finish before covering it with the full
-  // level summary. Ordinary completions still need only two paint frames.
+  // Let the board's brief line flash paint before presenting the level summary.
   const presentSummary = () => requestAnimationFrame(() => requestAnimationFrame(() => {
     if (completed && completedLevelNumber === finishedLevel && !$('completionDialog').open) {
       openDialog($('completionDialog'));
     }
   }));
-  if ($('board').querySelector('.line-completion-toast')) window.setTimeout(presentSummary, 640);
-  else presentSummary();
+  presentSummary();
 }
 function hasHintCandidate() { return puzzle.solution.some((row,r)=>row.some((v,c)=>v && board.getState(r,c)!==CELL.FILLED)); }
 function switchDifficulty(nextMode) {
